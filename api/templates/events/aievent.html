@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Event-Suche</title>
+
+  <!-- Dynamische Browserleisten-Farbe -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115">
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --maxw: 900px;
+      --radius: 16px;
+
+      /* Default (Light) */
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #0b0d11;
+      --muted: #475569;
+      --link: #1d4ed8;
+      --divider: #e5e7eb;
+      --btn-bg: #0f172a;
+      --btn-text: #ffffff;
+      --hero-bg: #f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+      --input-bg: #f9fafb;
+      --input-border: #d1d5db;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --card: #1a1d23;
+        --text: #f1f5f9;
+        --muted: #cbd5e1;
+        --link: #93c5fd;
+        --divider: #374151;
+        --btn-bg: #E58845;
+        --btn-text: #ffffff;
+        --hero-bg: #0b0d11;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+        --input-bg: #1a1d23;
+        --input-border: #374151;
+      }
+    }
+    html[data-theme="light"] {
+      --bg: #ffffff; --card:#ffffff; --text:#0b0d11; --muted:#475569; --link:#1d4ed8;
+      --divider:#e5e7eb; --btn-bg:#0f172a; --btn-text:#ffffff; --hero-bg:#f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10); --input-bg:#f9fafb; --input-border:#d1d5db;
+    }
+    html[data-theme="dark"] {
+      --bg:#0f1115; --card:#1a1d23; --text:#f1f5f9; --muted:#cbd5e1; --link:#93c5fd;
+      --divider:#374151; --btn-bg:#E58845; --btn-text:#ffffff; --hero-bg:#0b0d11;
+      --shadow: 0 10px 30px rgba(0,0,0,.35); --input-bg:#1a1d23; --input-border:#374151;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;padding:0;background:var(--bg);color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.6;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+    }
+    .wrap{max-width:var(--maxw);margin:0 auto;padding:4px}
+
+    .search-container {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 10px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .search-title {
+      margin: 0 0 20px 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+
+    .search-form {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .input-wrapper {
+      display: flex;
+      position: relative;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .audio-visualizer {
+      position: absolute;
+      top: 4px;
+      left: 14px;
+      right: 50px;
+      bottom: 4px;
+      pointer-events: none;
+      z-index: 5;
+      border-radius: 4px;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 0;
+      padding: 4px 42px 4px 14px; /* Minimales vertikales Padding */
+      font-size: 0.9rem;
+      background: var(--input-bg);
+      border: 2px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text);
+      transition: border-color 0.2s, color 0.2s;
+      resize: none;
+      font-family: inherit;
+      line-height: 1.4; /* Kompakte Zeilenhöhe */
+      height: 48px; /* Start-Höhe */
+      overflow: hidden;
+      box-sizing: border-box;
+      margin-left: 16px;
+    }
+
+    .search-input.recording {
+      color: transparent;
+      caret-color: transparent;
+    }
+
+    .search-input.transcribing {
+      color: var(--muted);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--btn-bg);
+    }
+
+    .mic-btn {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      padding: 6px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      color: var(--muted);
+      z-index: 10;
+    }
+
+    .mic-btn:hover {
+      background: var(--input-border);
+      color: var(--text);
+    }
+
+    .mic-btn.listening {
+      background: #dc2626;
+      color: white;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    .search-btn {
+      padding: 12px;
+      margin-right: 48px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+    }
+
+    .search-btn:hover {
+      opacity: 0.92;
+    }
+
+    .search-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      border: 3px solid var(--divider);
+      border-top: 3px solid var(--btn-bg);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .event-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: block;
+    }
+
+    .event-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0,0,0,.15);
+    }
+
+    .event-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: var(--hero-bg);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .event-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .event-content {
+      padding: 20px;
+    }
+
+    .event-date {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .event-location {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .event-title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      line-height: 1.3;
+    }
+
+    .event-description {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .no-results-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .debug-container {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      border: 2px solid #f59e0b;
+      box-shadow: var(--shadow);
+    }
+
+    .debug-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 0 0 16px 0;
+      color: #f59e0b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .debug-section {
+      margin-bottom: 16px;
+    }
+
+    .debug-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .debug-section-title {
+      font-weight: 600;
+      margin: 0 0 8px 0;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .debug-content {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .debug-params {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+    }
+
+    .debug-params-item {
+      margin-bottom: 4px;
+    }
+
+    .debug-params-item strong {
+      color: var(--text);
+    }
+
+    @media (min-width: 800px) {
+      .search-container { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="search-container">
+      <h1 class="search-title">Event-Suche</h1>
+      <form class="search-form" id="searchForm">
+        <div class="input-wrapper">
+          <canvas id="audioVisualizer" class="audio-visualizer" style="display: none;"></canvas>
+          <textarea
+            id="searchInput"
+            class="search-input"
+            placeholder="z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende..."
+            autocomplete="off"
+            rows="1"
+          ></textarea>
+          <button type="button" id="micBtn" class="mic-btn" title="Spracheingabe">
+            <svg id="micIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <svg id="stopIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <button type="submit" class="search-btn" id="searchBtn" title="Suchen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <div id="resultsContainer"></div>
+  </main>
+
+  <script>
+    // Theme handling
+    (function () {
+      const qp = new URLSearchParams(location.search);
+      const explicit = qp.get('theme');
+      const html = document.documentElement;
+
+      function isDarkPreferred() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      function applyTheme(mode) {
+        if (mode === 'light' || mode === 'dark') {
+          html.setAttribute('data-theme', mode);
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+        if (meta) {
+          meta.setAttribute('content', (mode || isDarkPreferred()) === 'dark' ? '#0f1115' : '#ffffff');
+        }
+      }
+
+      if (explicit === 'light' || explicit === 'dark') {
+        applyTheme(explicit);
+      } else {
+        applyTheme(null);
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (mq.addEventListener) mq.addEventListener('change', e => applyTheme(e.matches ? 'dark' : null));
+        else if (mq.addListener) mq.addListener(e => applyTheme(e.matches ? 'dark' : null));
+      }
+    })();
+
+    // Spracheingabe (lokale Transkription auf dem Server) mit Audio-Visualisierung
+    const searchInput = document.getElementById('searchInput');
+    const micBtn = document.getElementById('micBtn');
+    const micIcon = document.getElementById('micIcon');
+    const stopIcon = document.getElementById('stopIcon');
+    const searchForm = document.getElementById('searchForm');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const audioVisualizer = document.getElementById('audioVisualizer');
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let audioContext = null;
+    let analyser = null;
+    let animationId = null;
+    let canvasCtx = null;
+    let autoSearchAfterTranscription = false;
+
+    // Check for MediaRecorder support
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      micBtn.addEventListener('click', async function() {
+        if (isRecording) {
+          await stopRecording();
+        } else {
+          await startRecording();
+        }
+      });
+    } else {
+      micBtn.style.display = 'none';
+      console.error('MediaRecorder not supported');
+    }
+
+    async function startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Setup audio context for visualization
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        const microphone = audioContext.createMediaStreamSource(stream);
+        microphone.connect(analyser);
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.92;
+
+        // Try different formats in order of preference
+        let options;
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options = { mimeType: 'audio/webm;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) {
+          options = { mimeType: 'audio/ogg;codecs=opus' };
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          options = { mimeType: 'audio/webm' };
+        } else {
+          options = {}; // Use default
+        }
+
+        mediaRecorder = new MediaRecorder(stream, options);
+        console.log('Using audio format:', mediaRecorder.mimeType);
+
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstart = function() {
+          isRecording = true;
+          micBtn.classList.add('listening');
+
+          // Switch icons
+          micIcon.style.display = 'none';
+          stopIcon.style.display = 'block';
+
+          // Hide text, clear value and placeholder, show visualizer
+          searchInput.classList.add('recording');
+          searchInput.value = '';
+          searchInput.placeholder = '';
+
+          // Show and setup visualizer
+          setupVisualizer();
+          drawWaveform();
+        };
+
+        mediaRecorder.onstop = async function() {
+          isRecording = false;
+          micBtn.classList.remove('listening');
+
+          // Switch icons back
+          micIcon.style.display = 'block';
+          stopIcon.style.display = 'none';
+
+          // Stop visualization
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          audioVisualizer.style.display = 'none';
+
+          // Remove recording class and show transcribing state
+          searchInput.classList.remove('recording');
+          searchInput.classList.add('transcribing');
+
+          // Show waiting animation in placeholder
+          let dots = 0;
+          const waitingInterval = setInterval(() => {
+            dots = (dots + 1) % 4;
+            searchInput.placeholder = 'Transkribiere' + '.'.repeat(dots);
+          }, 500);
+
+          // Stop all tracks and cleanup
+          stream.getTracks().forEach(track => track.stop());
+          if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+          }
+
+          // Send complete audio for transcription
+          if (audioChunks.length > 0) {
+            const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+            await transcribeAudio(audioBlob, waitingInterval);
+          } else {
+            clearInterval(waitingInterval);
+            searchInput.classList.remove('transcribing');
+            searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+          }
+        };
+
+        mediaRecorder.onerror = function(event) {
+          console.error('MediaRecorder error:', event.error);
+          micBtn.classList.remove('listening');
+          micIcon.style.display = 'block';
+          stopIcon.style.display = 'none';
+          searchInput.classList.remove('recording');
+          searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+          audioVisualizer.style.display = 'none';
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          alert('Fehler bei der Aufnahme: ' + event.error);
+        };
+
+        // Start recording (no chunks, complete recording)
+        mediaRecorder.start();
+
+      } catch (error) {
+        console.error('Mikrofon-Zugriff fehlgeschlagen:', error);
+        micBtn.classList.remove('listening');
+        micIcon.style.display = 'block';
+        stopIcon.style.display = 'none';
+        searchInput.classList.remove('recording');
+        searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+        audioVisualizer.style.display = 'none';
+        alert('Mikrofon-Zugriff verweigert. Bitte erlauben Sie den Mikrofon-Zugriff in Ihren Browser-Einstellungen.');
+      }
+    }
+
+    function setupVisualizer() {
+      audioVisualizer.style.display = 'block';
+
+      // Calculate dynamic canvas size based on available space
+      const inputRect = searchInput.getBoundingClientRect();
+      const inputPaddingLeft = 14; // Left padding from CSS
+      const inputPaddingRight = 42; // Right padding (for mic button)
+      const availableWidth = inputRect.width - inputPaddingLeft - inputPaddingRight - 8; // Extra margin
+      const availableHeight = inputRect.height - 8; // Top and bottom padding
+
+      audioVisualizer.width = Math.max(100, availableWidth);
+      audioVisualizer.height = Math.max(30, availableHeight);
+
+      canvasCtx = audioVisualizer.getContext('2d');
+
+      // Set background to match input field
+      const bgColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--input-bg').trim();
+      canvasCtx.fillStyle = bgColor;
+      canvasCtx.fillRect(0, 0, audioVisualizer.width, audioVisualizer.height);
+    }
+
+    function drawWaveform() {
+      if (!isRecording || !analyser) return;
+
+      animationId = requestAnimationFrame(drawWaveform);
+
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteTimeDomainData(dataArray);
+
+      // Apply smoothing to data
+      const smoothedData = new Uint8Array(bufferLength);
+      const smoothingWindow = 5;
+      for (let i = 0; i < bufferLength; i++) {
+        let sum = 0;
+        let count = 0;
+        for (let j = Math.max(0, i - smoothingWindow); j <= Math.min(bufferLength - 1, i + smoothingWindow); j++) {
+          sum += dataArray[j];
+          count++;
+        }
+        smoothedData[i] = sum / count;
+      }
+
+      const width = audioVisualizer.width;
+      const height = audioVisualizer.height;
+
+      // Clear canvas with background color
+      const bgColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--input-bg').trim();
+      canvasCtx.fillStyle = bgColor;
+      canvasCtx.fillRect(0, 0, width, height);
+
+      // Draw waveform with reduced amplitude
+      canvasCtx.lineWidth = 1.5;
+      canvasCtx.strokeStyle = '#cbd5e1'; // Light gray
+      canvasCtx.beginPath();
+
+      const sliceWidth = width / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = smoothedData[i] / 128.0;
+        // Reduce amplitude by scaling towards center
+        const dampingFactor = 0.5; // Reduce intensity by 50%
+        const centered = (v - 1.0) * dampingFactor + 1.0;
+        const y = (centered * height) / 2;
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+
+        x += sliceWidth;
+      }
+
+      canvasCtx.lineTo(width, height / 2);
+      canvasCtx.stroke();
+
+      // Draw dots at peaks with higher threshold
+      canvasCtx.fillStyle = '#cbd5e1'; // Light gray
+
+      for (let i = 0; i < bufferLength; i += 25) {
+        const v = smoothedData[i] / 128.0;
+        const amplitude = Math.abs(v - 1.0);
+
+        if (amplitude > 0.2) { // Increased threshold from 0.1 to 0.2
+          const centered = (v - 1.0) * 0.5 + 1.0;
+          const xPos = (i / bufferLength) * width;
+          const yPos = (centered * height) / 2;
+          canvasCtx.beginPath();
+          canvasCtx.arc(xPos, yPos, 1.5, 0, 2 * Math.PI);
+          canvasCtx.fill();
+        }
+      }
+    }
+
+    async function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    async function transcribeAudio(audioBlob, waitingInterval) {
+      try {
+        // Check if blob is too small
+        if (audioBlob.size < 1000) {
+          console.log('Audio zu klein, überspringe:', audioBlob.size, 'bytes');
+          if (waitingInterval) clearInterval(waitingInterval);
+          searchInput.classList.remove('transcribing');
+          searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'audio.webm');
+
+        const response = await fetch('/api/v4/api/event/transcribe/', {
+          method: 'POST',
+          body: formData
+        });
+
+        // Stop waiting animation
+        if (waitingInterval) clearInterval(waitingInterval);
+        searchInput.classList.remove('transcribing');
+        searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+
+        if (!response.ok) {
+          console.warn('Transkription fehlgeschlagen, Status:', response.status);
+          if (response.status === 503) {
+            searchInput.placeholder = 'Spracheingabe ist auf diesem Server nicht aktiviert – bitte Text eingeben.';
+          }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data.text && data.text.trim()) {
+          searchInput.value = data.text;
+
+          // Trigger resize after voice input
+          searchInput.style.height = '48px';
+          const newHeight = Math.max(48, Math.min(searchInput.scrollHeight, 240));
+          searchInput.style.height = newHeight + 'px';
+
+          // If auto-search flag is set, trigger search
+          if (autoSearchAfterTranscription) {
+            autoSearchAfterTranscription = false;
+            searchForm.dispatchEvent(new Event('submit'));
+          }
+        }
+      } catch (error) {
+        console.warn('Fehler bei der Transkription:', error.message);
+        if (waitingInterval) clearInterval(waitingInterval);
+        searchInput.classList.remove('transcribing');
+        searchInput.placeholder = 'z.B. Konzerte morgen Abend, Kinderveranstaltungen am Wochenende...';
+      }
+    }
+
+    // Auto-resize textarea based on line breaks
+    searchInput.addEventListener('input', function() {
+      this.style.height = '48px'; // Reset to minimum height
+      const newHeight = Math.max(48, Math.min(this.scrollHeight, 240));
+      this.style.height = newHeight + 'px';
+    });
+
+    // Handle Enter key (submit on Enter, new line on Shift+Enter)
+    searchInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        searchForm.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    // Check for debug mode in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const debugMode = urlParams.get('debug') === 'true';
+
+    // Restore previous search results on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      const savedQuery = sessionStorage.getItem('ai_search_query');
+      const savedResults = sessionStorage.getItem('ai_search_results');
+
+      if (savedQuery && savedResults) {
+        searchInput.value = savedQuery;
+        try {
+          const data = JSON.parse(savedResults);
+          displayResults(data);
+        } catch (e) {
+          console.error('Failed to restore search results:', e);
+        }
+      }
+    });
+
+    // Search form submission
+    searchForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      // If recording is active, stop it and trigger auto-search after transcription
+      if (isRecording) {
+        autoSearchAfterTranscription = true;
+        await stopRecording();
+        return;
+      }
+
+      const query = searchInput.value.trim();
+
+      if (!query) {
+        alert('Bitte geben Sie eine Suchanfrage ein.');
+        return;
+      }
+
+      // Show loading state
+      searchBtn.disabled = true;
+      resultsContainer.innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Suche nach Events...</p>
+        </div>
+      `;
+
+      try {
+        const response = await fetch('/api/v4/api/event/ai-search/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({
+            query: query,
+            debug: debugMode
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Save search query and results to sessionStorage
+          sessionStorage.setItem('ai_search_query', query);
+          sessionStorage.setItem('ai_search_results', JSON.stringify(data));
+
+          displayResults(data);
+        } else {
+          throw new Error(data.error || 'Fehler bei der Suche');
+        }
+      } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-icon">⚠️</div>
+            <h2>Fehler bei der Suche</h2>
+            <p>${escapeHtml(error.message)}</p>
+          </div>
+        `;
+      } finally {
+        searchBtn.disabled = false;
+      }
+    });
+
+    function displayResults(data) {
+      let html = '';
+
+      // Show debug info if available
+      if (debugMode && data.debug_info) {
+        html += `
+          <div class="debug-container">
+            <h3 class="debug-title">
+              <span>🔍</span>
+              <span>Debug Informationen</span>
+            </h3>
+            <div class="debug-section">
+              <div class="debug-section-title">Geparste Parameter:</div>
+              <div class="debug-params">
+                ${Object.entries(data.parsed_params || {}).map(([key, value]) => {
+                  let displayValue = value;
+                  if (Array.isArray(value)) {
+                    displayValue = value.join(', ');
+                  } else if (typeof value === 'object') {
+                    displayValue = JSON.stringify(value, null, 2);
+                  }
+                  return `<div class="debug-params-item"><strong>${escapeHtml(key)}:</strong> ${escapeHtml(String(displayValue))}</div>`;
+                }).join('')}
+              </div>
+            </div>
+            <div class="debug-section">
+              <div class="debug-section-title">LLM Response:</div>
+              <div class="debug-content">${escapeHtml(data.debug_info.llm_response || 'N/A')}</div>
+            </div>
+          </div>
+        `;
+      }
+
+      if (!data.events || data.events.length === 0) {
+        const emptyTitle = data.not_event_search ? 'Keine Event-Suche erkannt' : 'Keine Events gefunden';
+        const emptyText = data.message || 'Versuchen Sie es mit einer anderen Suchanfrage.';
+        resultsContainer.innerHTML = html + `
+          <div class="no-results">
+            <div class="no-results-icon">🔍</div>
+            <h2>${escapeHtml(emptyTitle)}</h2>
+            <p>${escapeHtml(emptyText)}</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Hinweis vom Server anzeigen (z.B. "Kein Ort erkannt – Standard-Gebiet")
+      if (data.notice) {
+        html += `<div class="no-results" style="padding: 12px 16px; margin-bottom: 16px;"><p>${escapeHtml(data.notice)}</p></div>`;
+      }
+
+      // Server-Reihenfolge beibehalten: Der Server sortiert bereits sinnvoll
+      // (Keyword-Treffer vor verbreiterten Tag-Treffern, Kontext-Ranking bei
+      // "mit Oma"-Anfragen). Ein clientseitiges Neu-Sortieren würde das zerstören.
+      const eventsHtml = data.events.map(event => {
+        const eventDate = new Date(event.start_date);
+        const dateStr = eventDate.toLocaleDateString('de-DE', {
+          weekday: 'long',
+          day: '2-digit',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const location = [event.event_location, event.town].filter(Boolean).join(', ');
+        const imageUrl = /^https?:\/\//i.test(event.image_url || '') ? event.image_url : '';
+
+        // Build URL with return path
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        const eventUrl = `/api/v4/event/${event.id}/?from=${returnUrl}`;
+
+        return `
+          <a href="${eventUrl}" class="event-card">
+            <div class="event-image">
+              ${imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(event.title)}" />` : ''}
+            </div>
+            <div class="event-content">
+              <div class="event-date">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                <span>${dateStr}</span>
+              </div>
+              ${location ? `
+                <div class="event-location">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                  <span>${escapeHtml(location)}</span>
+                </div>
+              ` : ''}
+              <h2 class="event-title">${escapeHtml(event.title)}</h2>
+              ${event.abstract ? `
+                <p class="event-description">${escapeHtml(event.abstract)}</p>
+              ` : ''}
+            </div>
+          </a>
+        `;
+      }).join('');
+
+      resultsContainer.innerHTML = html + `
+        <div class="results-container">
+          ${eventsHtml}
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+</body>
+</html>

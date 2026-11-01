@@ -1,0 +1,84 @@
+{% load newadmin_tags %}
+
+<a href="{% url 'newadmin:event-edit' event.pk %}" class="article-card">
+    <div class="article-card__body">
+        {% if event.source %}
+        <div class="article-card__source">{{ event.source.name }}</div>
+        {% endif %}
+
+        <h3 class="article-card__title">{{ event.title }}</h3>
+
+        {% if event.event_location or event.town %}
+        <p class="article-card__abstract">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -1px; margin-right: 2px;">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+            {{ event.event_location }}{% if event.event_location and event.town %}, {% endif %}{{ event.town }}
+        </p>
+        {% endif %}
+
+        <div class="article-card__meta">
+            {% with next_occ=event.next_occurrence_date %}
+            {% if next_occ %}
+            <span class="article-card__meta-item" title="Naechster Termin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                {{ next_occ|date:"j. M Y, H:i" }}
+            </span>
+            {% endif %}
+            {% endwith %}
+
+            <span class="article-card__meta-item" title="Views">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                {{ event.request_count|default:"0" }}
+            </span>
+
+            <span class="article-card__meta-item" title="Event-ID">
+                #{{ event.id }}
+            </span>
+
+            {% if event.occurrences.count > 0 %}
+            <span class="article-card__meta-item" title="Termine">
+                {{ event.occurrences.count }} Termin{{ event.occurrences.count|pluralize:"e" }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if event.tags.all %}
+        <div class="article-card__tags">
+            {% for tag in event.tags.all %}
+                <span class="tag-chip">{{ tag.name }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    {% if event.image %}
+    <img src="{{ event.image.url }}" alt="" class="article-card__image" loading="lazy">
+    {% endif %}
+
+    <div class="article-card__status">
+        {% if event.language and event.language != "de" %}
+            <span class="badge badge--lang" title="Sprache">{{ event.language|upper }}</span>
+        {% endif %}
+        {% if event.published %}
+            <span class="badge badge--published">Veröffentlicht</span>
+        {% elif event.draft %}
+            <span class="status-icon status-icon--draft" title="Entwurf">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1112 8.4a3.6 3.6 0 010 7.2z"/>
+                </svg>
+            </span>
+        {% else %}
+            <span class="badge badge--unpublished">Nicht Veröffentlicht</span>
+        {% endif %}
+    </div>
+</a>

@@ -1,0 +1,29 @@
+{% if area_stats %}
+<div class="stats-section__title">Bereich-Vergleich</div>
+<div class="panel">
+    <div class="area-table-wrapper">
+        <table class="area-table">
+            <thead>
+                <tr>
+                    <th>Bereich</th>
+                    <th>Artikel</th>
+                    <th>Events</th>
+                    <th>Views Gesamt</th>
+                    <th>&Oslash; Views / Inhalt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for area in area_stats %}
+                <tr>
+                    <td>{{ area.name }}</td>
+                    <td class="num">{{ area.articles }}</td>
+                    <td class="num">{{ area.events }}</td>
+                    <td class="num">{{ area.total_views }}</td>
+                    <td class="num">{{ area.avg_views }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}

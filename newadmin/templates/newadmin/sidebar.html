@@ -1,0 +1,59 @@
+{% load static newadmin_tags %}
+
+<aside class="newadmin-sidebar">
+    <div class="sidebar-header">
+        <a href="{% url 'newadmin:index' %}">
+            <img src="{% static 'newadmin/img/molo-logo.svg' %}" alt="MOLO" class="sidebar-logo">
+        </a>
+        <a href="{% url 'newadmin:profile' %}" class="sidebar-user" title="Profil bearbeiten">
+            {% if user_avatar_url %}
+                <img src="{{ user_avatar_url }}" alt="{{ current_user.username }}" class="sidebar-avatar">
+            {% else %}
+                <div class="sidebar-avatar-placeholder">
+                    {{ current_user|user_initial }}
+                </div>
+            {% endif %}
+            <span class="sidebar-username">@{{ current_user.username }}</span>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <a href="{% url 'newadmin:stats' %}"
+           class="sidebar-nav-item {% active_nav 'newadmin:stats' %}">
+            Übersicht
+            <span class="nav-chevron">&#8250;</span>
+        </a>
+
+        <a href="{% url 'newadmin:article-list' %}"
+           class="sidebar-nav-item {% active_nav 'newadmin:article-list' %}">
+            Artikel
+            <span class="nav-chevron">&#8250;</span>
+        </a>
+
+        <a href="{% url 'newadmin:event-list' %}"
+           class="sidebar-nav-item {% active_nav 'newadmin:event-list' %}">
+            Events
+            <span class="nav-chevron">&#8250;</span>
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span class="theme-toggle-icon">&#9790;</span>
+            <span class="theme-toggle-label">Light Mode</span>
+        </button>
+        <form method="post" action="{% url 'newadmin:logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="theme-toggle theme-toggle--logout">
+                <span class="theme-toggle-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                </span>
+                <span>Abmelden</span>
+            </button>
+        </form>
+    </div>
+</aside>

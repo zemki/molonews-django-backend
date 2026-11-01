@@ -1,0 +1,209 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}Profil - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'newadmin/css/list.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Mein Profil</h1>
+    <p class="page-header__subtitle">@{{ current_user.username }} &middot; {{ user_role }}</p>
+</div>
+
+{# Profile Form #}
+<details class="form-section" open>
+    <summary>Persoenliche Daten</summary>
+    <form method="post" enctype="multipart/form-data" class="article-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="profile">
+
+        <div class="form-group">
+            <label>Profilbild</label>
+            <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem;">
+                {% if user_avatar_url %}
+                    <img src="{{ user_avatar_url }}" alt="Profilbild"
+                         style="width:64px; height:64px; border-radius:50%; object-fit:cover; border:2px solid var(--color-accent);">
+                {% else %}
+                    <div style="width:64px; height:64px; border-radius:50%; background:var(--color-surface-hover); display:flex; align-items:center; justify-content:center; font-size:1.5rem; color:var(--color-text-muted); border:2px solid var(--color-border);">
+                        {{ current_user|user_initial }}
+                    </div>
+                {% endif %}
+                <div>
+                    {{ profile_form.profile_image }}
+                    {% if profile_form.profile_image.errors %}<div class="field-error">{{ profile_form.profile_image.errors }}</div>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label for="{{ profile_form.first_name.id_for_label }}">Vorname</label>
+                {{ profile_form.first_name }}
+                {% if profile_form.first_name.errors %}<div class="field-error">{{ profile_form.first_name.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ profile_form.last_name.id_for_label }}">Nachname</label>
+                {{ profile_form.last_name }}
+                {% if profile_form.last_name.errors %}<div class="field-error">{{ profile_form.last_name.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ profile_form.email.id_for_label }}">E-Mail</label>
+            {{ profile_form.email }}
+            {% if profile_form.email.errors %}<div class="field-error">{{ profile_form.email.errors }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label for="{{ profile_form.display_name.id_for_label }}">Anzeigename</label>
+                {{ profile_form.display_name }}
+                {% if profile_form.display_name.errors %}<div class="field-error">{{ profile_form.display_name.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ profile_form.phone.id_for_label }}">Telefon</label>
+                {{ profile_form.phone }}
+                {% if profile_form.phone.errors %}<div class="field-error">{{ profile_form.phone.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-actions" style="border-top:none; margin-top:1rem; padding-top:0;">
+            <button type="submit" class="btn btn--primary">Profil speichern</button>
+        </div>
+    </form>
+</details>
+
+{# Meine Organisation - direct edit link #}
+{% if organization %}
+<details class="form-section" open>
+    <summary>Meine Organisation</summary>
+    {% if can_edit_organization %}<a href="{% url 'newadmin:organization-edit' organization.pk %}" class="article-card" style="padding:1rem; margin-bottom:0;">{% else %}<div class="article-card" style="padding:1rem; margin-bottom:0;">{% endif %}
+        <div class="article-card__body">
+            <div class="article-card__source">{{ organization.get_type_display }}</div>
+            <h3 class="article-card__title" style="font-size:var(--font-size-base);">{{ organization.name }}</h3>
+            {% if organization.homepage %}
+            <p class="article-card__abstract">{{ organization.homepage }}</p>
+            {% endif %}
+        </div>
+        {% if organization.image %}
+        <img src="{{ organization.image.url }}" alt="" class="article-card__image" loading="lazy">
+        {% endif %}
+        {% if can_edit_organization %}
+        <div class="article-card__status">
+            <span class="btn btn--ghost btn--sm">Bearbeiten &#8250;</span>
+        </div>
+    </a>
+        {% else %}
+    </div>
+        {% endif %}
+</details>
+{% endif %}
+
+{# Meine Quellen - editable #}
+{% if user_sources %}
+<details class="form-section" open>
+    <summary>Meine Quellen</summary>
+    <div class="article-list" style="gap:0.5rem;">
+        {% for source in user_sources %}
+        <a href="{% url 'newadmin:source-edit' source.pk %}" class="article-card" style="padding:1rem;">
+            <div class="article-card__body">
+                <h3 class="article-card__title" style="font-size:var(--font-size-base);">{{ source.name }}</h3>
+                <div class="article-card__meta">
+                    <span class="article-card__meta-item">{{ source.get_type_display }}</span>
+                    {% if source.organization %}
+                    <span class="article-card__meta-item">{{ source.organization.name }}</span>
+                    {% endif %}
+                    {% if source.link %}
+                    <span class="article-card__meta-item">{{ source.link|truncatechars:40 }}</span>
+                    {% endif %}
+                </div>
+                {% if source.default_tags.all %}
+                <div class="article-card__tags" style="margin-top:0.375rem;">
+                    {% for tag in source.default_tags.all %}
+                    <span class="tag-chip">{{ tag.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="article-card__status">
+                {% if source.active %}
+                <span class="status-icon status-icon--published" title="Aktiv">&#10003;</span>
+                {% else %}
+                <span class="badge badge--draft">Inaktiv</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</details>
+{% endif %}
+
+{# Berechtigungen & Gebiete (read-only info) #}
+<details class="form-section">
+    <summary>Berechtigungen & Gebiete</summary>
+
+    <div class="form-group">
+        <label>Rolle & Berechtigungen</label>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            <span class="badge badge--published">{{ user_role }}</span>
+            {% if current_user.can_publish %}
+            <span class="badge badge--published">Kann veroeffentlichen</span>
+            {% endif %}
+            {% if current_user.can_modify_organization_info %}
+            <span class="badge badge--published">Kann Organisation bearbeiten</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if user_areas %}
+    <div class="form-group">
+        <label>Zugewiesene Gebiete</label>
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+            {% for area in user_areas %}
+            <span class="tag-chip" style="font-size:var(--font-size-sm); padding:0.25rem 0.75rem;">
+                {{ area.name }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</details>
+
+{# Password Change #}
+<details class="form-section">
+    <summary>Passwort aendern</summary>
+    <form method="post" class="article-form">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="password">
+
+        <div class="form-group">
+            <label for="{{ password_form.old_password.id_for_label }}">Aktuelles Passwort</label>
+            {{ password_form.old_password }}
+            {% if password_form.old_password.errors %}<div class="field-error">{{ password_form.old_password.errors }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label for="{{ password_form.new_password1.id_for_label }}">Neues Passwort</label>
+                {{ password_form.new_password1 }}
+                {% if password_form.new_password1.errors %}<div class="field-error">{{ password_form.new_password1.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ password_form.new_password2.id_for_label }}">Neues Passwort bestaetigen</label>
+                {{ password_form.new_password2 }}
+                {% if password_form.new_password2.errors %}<div class="field-error">{{ password_form.new_password2.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-actions" style="border-top:none; margin-top:1rem; padding-top:0;">
+            <button type="submit" class="btn btn--primary">Passwort aendern</button>
+        </div>
+    </form>
+</details>
+{% endblock %}

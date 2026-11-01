@@ -1,0 +1,28 @@
+{% extends "newadmin/base.html" %}
+{% load static %}
+
+{% block title %}Artikel löschen - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="delete-confirm">
+    <div class="delete-confirm__title">Artikel löschen?</div>
+    <div class="delete-confirm__message">
+        Bist du sicher, dass du den Artikel<br>
+        <strong>&ldquo;{{ object.title }}&rdquo;</strong><br>
+        (ID #{{ object.pk }}) unwiderruflich löschen möchtest?
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="delete-confirm__actions">
+            <a href="{% url 'newadmin:article-edit' object.pk %}" class="btn btn--secondary">Abbrechen</a>
+            <button type="submit" class="btn btn--danger">Ja, löschen</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

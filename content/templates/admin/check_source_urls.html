@@ -1,0 +1,233 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Quellen-Link-Check{% endblock %}
+
+{% block content_title %}<h1>Quellen-Link-Check</h1>{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'Moloadmin:index' %}">{% trans 'Home' %}</a> &rsaquo; Quellen-Link-Check
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+    #check-status {
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #ffc;
+        border: 1px solid #dda;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    #check-status.done {
+        background: #cfc;
+        border-color: #ada;
+    }
+    #check-status.error {
+        background: #fcc;
+        border-color: #daa;
+    }
+    #progress-text {
+        font-weight: bold;
+    }
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+    .results-table th,
+    .results-table td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    .results-table th {
+        background: #f8f8f8;
+        font-weight: bold;
+    }
+    .results-table tr:hover {
+        background: #f5f5f5;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #fff;
+    }
+    .status-badge.http-403 { background: #e67e22; }
+    .status-badge.http-404 { background: #e74c3c; }
+    .status-badge.http-500 { background: #8e44ad; }
+    .status-badge.http-other { background: #e74c3c; }
+    .status-badge.connection { background: #c0392b; }
+    .status-badge.timeout { background: #f39c12; }
+    .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid #ccc;
+        border-top-color: #333;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary {
+        font-size: 15px;
+        margin: 15px 0;
+        padding: 12px;
+        background: #f0f0f0;
+        border-radius: 4px;
+    }
+    .summary strong { font-size: 16px; }
+    .link-url {
+        max-width: 400px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
+        color: #666;
+        font-size: 12px;
+    }
+</style>
+
+<div id="check-status">
+    <span class="spinner"></span>
+    <span id="progress-text">Prüfe Quellen... (0 / ?)</span>
+</div>
+
+<div id="results" style="display:none;">
+    <div class="summary" id="summary"></div>
+    <div id="broken-section" style="display:none;">
+        <h2 id="broken-title"></h2>
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Typ</th>
+                    <th>Link</th>
+                    <th>Aktion</th>
+                </tr>
+            </thead>
+            <tbody id="broken-tbody"></tbody>
+        </table>
+    </div>
+    <div id="all-ok" style="display:none; padding: 20px; background: #cfc; border-radius: 4px; margin-top: 15px;">
+        Alle Quellen mit Links sind erreichbar!
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusEl = document.getElementById('check-status');
+    const progressEl = document.getElementById('progress-text');
+    const resultsEl = document.getElementById('results');
+    const summaryEl = document.getElementById('summary');
+    const brokenSection = document.getElementById('broken-section');
+    const brokenTitle = document.getElementById('broken-title');
+    const brokenTbody = document.getElementById('broken-tbody');
+    const allOkEl = document.getElementById('all-ok');
+
+    // Step 1: Start the background job
+    fetch('{% url "Moloadmin:check_source_urls_start" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        const jobId = data.job_id;
+        // Step 2: Poll for progress every 2 seconds
+        const interval = setInterval(function() {
+            fetch('{% url "Moloadmin:check_source_urls_status" %}?job_id=' + jobId)
+            .then(r => r.json())
+            .then(function(status) {
+                const checked = status.checked || 0;
+                const total = status.total || '?';
+                const withLink = status.total_with_link || 0;
+                progressEl.textContent = 'Prüfe Quellen... (' + checked + ' / ' + total + ', davon ' + withLink + ' mit Link)';
+
+                if (!status.done) return;
+
+                // Done — stop polling and show results
+                clearInterval(interval);
+                statusEl.classList.add('done');
+                statusEl.innerHTML = 'Check abgeschlossen!';
+                resultsEl.style.display = 'block';
+
+                summaryEl.innerHTML =
+                    '<strong>' + status.ok_count + '</strong> OK, ' +
+                    '<strong>' + status.broken.length + '</strong> fehlerhafte Links, ' +
+                    '<strong>' + status.no_link_count + '</strong> ohne Link ' +
+                    '(von <strong>' + status.total + '</strong> aktiven Quellen gepr&uuml;ft)';
+
+                if (status.broken.length > 0) {
+                    brokenSection.style.display = 'block';
+                    brokenTitle.textContent = status.broken.length + ' Quellen mit fehlerhaften Links';
+
+                    status.broken.forEach(function(item) {
+                        const tr = document.createElement('tr');
+
+                        let badgeClass = 'http-other';
+                        if (item.status.indexOf('403') > -1) badgeClass = 'http-403';
+                        else if (item.status.indexOf('404') > -1) badgeClass = 'http-404';
+                        else if (item.status.indexOf('500') > -1) badgeClass = 'http-500';
+                        else if (item.status.indexOf('CONNECTION') > -1) badgeClass = 'connection';
+                        else if (item.status.indexOf('TIMEOUT') > -1) badgeClass = 'timeout';
+
+                        // Werte stammen aus Quellen-Daten: nur per textContent einsetzen
+                        function cell(child) {
+                            const td = document.createElement('td');
+                            td.appendChild(child);
+                            return td;
+                        }
+                        function text(value) {
+                            return document.createTextNode(value == null ? '' : String(value));
+                        }
+                        function link(href, label, className) {
+                            const a = document.createElement('a');
+                            if (/^https?:\/\//i.test(href || '') || String(href || '').startsWith('/')) {
+                                a.href = href;
+                            }
+                            a.target = '_blank';
+                            a.rel = 'noopener noreferrer';
+                            if (className) a.className = className;
+                            a.title = href || '';
+                            a.textContent = label;
+                            return a;
+                        }
+                        const strong = document.createElement('strong');
+                        strong.textContent = item.name;
+                        const badge = document.createElement('span');
+                        badge.className = 'status-badge ' + badgeClass;
+                        badge.textContent = item.status;
+
+                        tr.appendChild(cell(text(item.id)));
+                        tr.appendChild(cell(strong));
+                        tr.appendChild(cell(badge));
+                        tr.appendChild(cell(text(item.type)));
+                        tr.appendChild(cell(link(item.link, item.link, 'link-url')));
+                        tr.appendChild(cell(link(item.admin_url, 'Bearbeiten')));
+
+                        brokenTbody.appendChild(tr);
+                    });
+                } else {
+                    allOkEl.style.display = 'block';
+                }
+            });
+        }, 2000);
+    })
+    .catch(function(err) {
+        statusEl.classList.add('error');
+        statusEl.textContent = 'Fehler beim Prüfen: ' + err;
+    });
+});
+</script>
+{% endblock %}

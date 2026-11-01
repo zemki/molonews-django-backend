@@ -1,0 +1,126 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}Events - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="toolbar">
+    <div class="toolbar__left">
+        <h1 class="toolbar__title">Events</h1>
+
+        <!-- Status Filter -->
+        <div class="filter-dropdown">
+            <button class="btn btn--ghost btn--sm filter-dropdown__btn" title="Status filtern">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                {% if current_status %}
+                    <span class="badge badge--{{ current_status }}">
+                        {% if current_status == 'published' %}Veröffentlicht{% endif %}
+                        {% if current_status == 'unpublished' %}Unveröffentlicht{% endif %}
+
+                        {% if current_status == 'upcoming' %}Kommende{% endif %}
+                    </span>
+                {% endif %}
+            </button>
+            <div class="filter-dropdown__menu">
+                <button class="filter-dropdown__item {% if not current_status %}active{% endif %}" data-param="status" data-value="">Alle</button>
+                <button class="filter-dropdown__item {% if current_status == 'published' %}active{% endif %}" data-param="status" data-value="published">Veröffentlicht</button>
+                <button class="filter-dropdown__item {% if current_status == 'unpublished' %}active{% endif %}" data-param="status" data-value="unpublished">Unveröffentlicht</button>
+
+                <button class="filter-dropdown__item {% if current_status == 'upcoming' %}active{% endif %}" data-param="status" data-value="upcoming">Kommende Events</button>
+            </div>
+        </div>
+
+        <!-- Sort -->
+        <div class="filter-dropdown">
+            <button class="btn btn--ghost btn--sm filter-dropdown__btn" title="Sortieren">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <polyline points="19 12 12 19 5 12"/>
+                </svg>
+            </button>
+            <div class="filter-dropdown__menu">
+                <button class="filter-dropdown__item {% if current_sort == 'next' %}active{% endif %}" data-param="sort" data-value="next">Naechster Termin</button>
+                <button class="filter-dropdown__item {% if current_sort == '-date' %}active{% endif %}" data-param="sort" data-value="-date">Neueste zuerst</button>
+                <button class="filter-dropdown__item {% if current_sort == 'date' %}active{% endif %}" data-param="sort" data-value="date">Aelteste zuerst</button>
+                <button class="filter-dropdown__item {% if current_sort == '-views' %}active{% endif %}" data-param="sort" data-value="-views">Meiste Views</button>
+                <button class="filter-dropdown__item {% if current_sort == 'title' %}active{% endif %}" data-param="sort" data-value="title">Titel A-Z</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toolbar__right">
+        <form method="get" class="search-wrapper">
+            {% if current_status %}<input type="hidden" name="status" value="{{ current_status }}">{% endif %}
+            {% if current_sort and current_sort != 'next' %}<input type="hidden" name="sort" value="{{ current_sort }}">{% endif %}
+            {% if current_field and current_field != 'all' %}<input type="hidden" name="field" value="{{ current_field }}">{% endif %}
+            <span class="search-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+            </span>
+            <input type="search" name="q" value="{{ search_query }}" placeholder="Suchen..." class="search-input" autocomplete="off">
+            <div class="filter-dropdown search-field-dropdown">
+                <button type="button" class="btn btn--ghost btn--sm filter-dropdown__btn" title="Suchfeld waehlen">
+                    <span>
+                        {% if current_field == 'title' %}Nur Titel
+                        {% elif current_field == 'content' %}Nur Inhalt
+                        {% elif current_field == 'topic' %}Nur Thema
+                        {% elif current_field == 'organization' %}Nur Veranstalter
+                        {% elif current_field == 'area' %}Nur Gebiet
+                        {% elif current_field == 'location' %}Nur Veranstaltungsort
+                        {% else %}Alles durchsuchen{% endif %}
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+                <div class="filter-dropdown__menu filter-dropdown__menu--right">
+                    <button type="button" class="filter-dropdown__item {% if not current_field or current_field == 'all' %}active{% endif %}" data-param="field" data-value="">Alles durchsuchen</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'title' %}active{% endif %}" data-param="field" data-value="title">Nur Titel</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'content' %}active{% endif %}" data-param="field" data-value="content">Nur Inhalt</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'topic' %}active{% endif %}" data-param="field" data-value="topic">Nur Thema</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'organization' %}active{% endif %}" data-param="field" data-value="organization">Nur Veranstalter</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'area' %}active{% endif %}" data-param="field" data-value="area">Nur Gebiet</button>
+                    <button type="button" class="filter-dropdown__item {% if current_field == 'location' %}active{% endif %}" data-param="field" data-value="location">Nur Veranstaltungsort</button>
+                </div>
+            </div>
+        </form>
+        <a href="{% url 'newadmin:event-create' %}" class="btn btn--primary btn--create">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Neues Event</span>
+        </a>
+    </div>
+</div>
+
+<div class="article-list">
+    {% for event in events %}
+        {% include "newadmin/event/_card.html" with event=event %}
+    {% empty %}
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <p>Keine Events gefunden.</p>
+        </div>
+    {% endfor %}
+</div>
+
+{% include "newadmin/includes/pagination.html" %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'newadmin/js/list.js' %}"></script>
+{% endblock %}

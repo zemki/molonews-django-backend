@@ -1,0 +1,577 @@
+{% load l10n molo_html %}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ event.title }}</title>
+
+  <!-- Dynamische Browserleisten-Farbe -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115">
+
+  <!-- Leaflet CSS for OpenStreetMap -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --maxw: 900px;
+      --radius: 16px;
+
+      /* Default (Light) */
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #0b0d11;
+      --muted: #475569;
+      --link: #1d4ed8;
+      --divider: #e5e7eb;
+      --btn-bg: #0f172a;
+      --btn-text: #ffffff;
+      --hero-bg: #f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+      --ticket-btn: #ff8c42;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --card: #1a1d23;
+        --text: #f1f5f9;
+        --muted: #cbd5e1;
+        --link: #93c5fd;
+        --divider: #374151;
+        --btn-bg: #E58845;
+        --btn-text: #ffffff;
+        --hero-bg: #0b0d11;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+        --ticket-btn: #E58845;
+      }
+    }
+    html[data-theme="light"] {
+      --bg: #ffffff; --card:#ffffff; --text:#0b0d11; --muted:#475569; --link:#1d4ed8;
+      --divider:#e5e7eb; --btn-bg:#0f172a; --btn-text:#ffffff; --hero-bg:#f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10); --ticket-btn:#ff8c42;
+    }
+    html[data-theme="dark"] {
+      --bg:#0f1115; --card:#1a1d23; --text:#f1f5f9; --muted:#cbd5e1; --link:#93c5fd;
+      --divider:#374151; --btn-bg:#E58845; --btn-text:#ffffff; --hero-bg:#0b0d11;
+      --shadow: 0 10px 30px rgba(0,0,0,.35); --ticket-btn:#E58845;
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;padding:0;background:var(--bg);color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.6;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+    }
+    .wrap{max-width:var(--maxw);margin:0 auto;padding:16px}
+
+    .hero{
+      width:100%;
+      aspect-ratio: 16/9;
+      background:var(--hero-bg);
+      overflow:hidden;
+      border-radius:var(--radius);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0;
+      padding:0;
+      position: relative;
+    }
+    .hero img{
+      width: 100%;
+      height: 100%;
+      object-fit:cover;
+    }
+
+    .ticket-btn-overlay {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    .ticket-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--ticket-btn);
+      color: white;
+      text-decoration: none;
+      padding: 12px 32px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .ticket-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,.4);
+    }
+
+    .card{
+      margin-top:-32px;
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:24px;
+      box-shadow: var(--shadow);
+      position:relative;
+    }
+
+    .event-title {
+      margin: 0 0 16px 0;
+      font-size: clamp(1.6rem, 2.5vw + 1rem, 2.4rem);
+      line-height: 1.2;
+      letter-spacing: .2px;
+    }
+
+    .event-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--divider);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+    }
+
+    .meta-item svg {
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    .content {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .content p {
+      margin: 0 0 1em 0;
+    }
+
+    .content a {
+      color: var(--link);
+    }
+
+    .map-section {
+      margin: 32px 0;
+    }
+
+    .map-container {
+      width: 100%;
+      height: 400px;
+      background: var(--hero-bg);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    .location-info {
+      margin-top: 16px;
+      padding: 20px;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid var(--divider);
+    }
+
+    .organization-section {
+      margin: 32px 0;
+      padding: 24px;
+      background: var(--hero-bg);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .org-logo {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .org-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .org-info h3 {
+      margin: 0 0 4px 0;
+      font-size: 1.2rem;
+    }
+
+    .org-info p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .tags-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: var(--ticket-btn);
+      color: white;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .external-link {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--divider);
+    }
+
+    .external-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: opacity .2s ease;
+    }
+
+    .external-link-btn:hover {
+      opacity: .92;
+    }
+
+    .back-btn-container {
+      margin-bottom: 16px;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      color: var(--text);
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+      border: 1px solid var(--divider);
+    }
+
+    .back-btn:hover {
+      background: var(--hero-bg);
+    }
+
+    @media (min-width: 800px) {
+      .card { padding: 32px; }
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ event.title }}">
+  {% if image_url %}<meta property="og:image" content="{{ image_url }}">{% endif %}
+  <meta property="og:type" content="event">
+</head>
+<body>
+  <main class="wrap">
+    <div class="back-btn-container" id="backBtnContainer"></div>
+
+    <figure class="hero">
+      {% if image_url %}
+        <img src="{{ image_url }}" alt="{{ event.title }}">
+      {% endif %}
+
+      {% if event.ticket_url|safe_url and event.ticket_url|length > 10 and event.ticket_url != "http://" and event.ticket_url != "https://" and "example.com" not in event.ticket_url %}
+      <div class="ticket-btn-overlay">
+        <a href="{{ event.ticket_url|safe_url }}" target="_blank" rel="noopener noreferrer" class="ticket-btn">
+          <span>Tickets</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+          </svg>
+        </a>
+      </div>
+      {% endif %}
+    </figure>
+
+    <article class="card">
+      <h1 class="event-title">{{ event.title }}</h1>
+
+      <div class="event-meta">
+        <div class="meta-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span><strong>{{ event.start_date|date:"l, d. F Y" }} um {{ event.start_date|date:"H:i" }} Uhr</strong></span>
+        </div>
+
+        {% if event.event_location %}
+        <div class="meta-item">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+            <circle cx="12" cy="10" r="3"></circle>
+          </svg>
+          <span>{{ event.event_location }}{% if event.town %}, {{ event.town }}{% endif %}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      <section class="content">
+        {% if event.content %}
+          {% if "<" in event.content %}
+            {{ event.content|sanitize_html }}
+          {% else %}
+            {{ event.content|linebreaks }}
+          {% endif %}
+        {% else %}
+          <p>Keine Beschreibung verfügbar.</p>
+        {% endif %}
+      </section>
+
+      {% if event.link|safe_url and event.link|length > 10 and event.link != "http://" and event.link != "https://" and "example.com" not in event.link %}
+      <div class="external-link">
+        <a href="{{ event.link|safe_url }}" target="_blank" rel="noopener noreferrer" class="external-link-btn">
+          <span>Zur Event-Website</span>
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+          </svg>
+        </a>
+      </div>
+      {% endif %}
+
+      {% if event.event_location and event.town %}
+      <section class="map-section">
+        <h2 style="margin-top: 0;">Location & Themen</h2>
+        <div class="map-container">
+          <div id="map"></div>
+        </div>
+        <div class="location-info">
+          <div class="meta-item">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <span><strong>{{ event.event_location }}, {{ event.town }}</strong></span>
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if event.organization %}
+      <section class="organization-section">
+        {% if event.organization.logo %}
+        <div class="org-logo">
+          <img src="{{ event.organization.logo.url }}" alt="{{ event.organization.name }}">
+        </div>
+        {% else %}
+        <div class="org-logo">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        {% endif %}
+        <div class="org-info">
+          <h3>{{ event.organization.name }}</h3>
+          {% if event.organization.area %}
+          <p>{{ event.organization.area.name }}</p>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if tags %}
+      <section class="tags-section">
+        {% for tag in tags %}
+        <span class="tag">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+          {{ tag.name }}
+        </span>
+        {% endfor %}
+      </section>
+      {% endif %}
+    </article>
+  </main>
+
+  <script>
+    // Show back button if returning from AI search
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromUrl = urlParams.get('from');
+      const backBtnContainer = document.getElementById('backBtnContainer');
+
+      if (fromUrl) {
+        const backBtn = document.createElement('a');
+        // Nur relative Pfade auf diesem Server zulassen (kein javascript:, keine fremden Hosts)
+        let target = '';
+        try { target = decodeURIComponent(fromUrl); } catch (e) { return; }
+        if (!target.startsWith('/') || target.startsWith('//') || target.startsWith('/\\')) return;
+        backBtn.href = target;
+        backBtn.className = 'back-btn';
+        backBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          <span>Zurück zur Suche</span>
+        `;
+        backBtnContainer.appendChild(backBtn);
+      }
+    })();
+
+    // Theme handling
+    (function () {
+      const qp = new URLSearchParams(location.search);
+      const explicit = qp.get('theme');
+      const html = document.documentElement;
+
+      function isDarkPreferred() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      function applyTheme(mode) {
+        if (mode === 'light' || mode === 'dark') {
+          html.setAttribute('data-theme', mode);
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+        if (meta) {
+          meta.setAttribute('content', (mode || isDarkPreferred()) === 'dark' ? '#0f1115' : '#ffffff');
+        }
+      }
+
+      if (explicit === 'light' || explicit === 'dark') {
+        applyTheme(explicit);
+      } else {
+        applyTheme(null);
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (mq.addEventListener) mq.addEventListener('change', e => applyTheme(e.matches ? 'dark' : null));
+        else if (mq.addListener) mq.addListener(e => applyTheme(e.matches ? 'dark' : null));
+      }
+    })();
+  </script>
+
+  <!-- Leaflet JS for OpenStreetMap -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+  <script>
+    // Initialize OpenStreetMap
+    {% if event.event_location and event.town %}
+    (function() {
+      // Use coordinates from database if available
+      {% if latitude and longitude %}
+      const lat = {{ latitude|unlocalize }};
+      const lon = {{ longitude|unlocalize }};
+
+      console.log('✅ Koordinaten aus Datenbank:', lat, lon);
+
+      // Initialize map with DB coordinates
+      const map = L.map('map').setView([lat, lon], 15);
+
+      // Add OpenStreetMap tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+      }).addTo(map);
+
+      // Add marker
+      const marker = L.marker([lat, lon]).addTo(map);
+      marker.bindPopup('<b>{{ event.event_location|force_escape|escapejs }}</b><br>{{ event.town|force_escape|escapejs }}').openPopup();
+
+      {% else %}
+      // Fallback: Geocode the location using Nominatim (keine Koordinaten in DB)
+      console.log('⚠️ Keine Koordinaten in DB - verwende Nominatim Geocoding');
+
+      // Build full address for better geocoding accuracy
+      let locationParts = [];
+      {% if event.street %}locationParts.push("{{ event.street|escapejs }}");{% endif %}
+      {% if event.zip_code %}locationParts.push("{{ event.zip_code|escapejs }}");{% endif %}
+      {% if event.town %}locationParts.push("{{ event.town|escapejs }}");{% endif %}
+      {% if event.event_location %}locationParts.push("{{ event.event_location|escapejs }}");{% endif %}
+
+      // Remove duplicates and empty values
+      const uniqueParts = [...new Set(locationParts.filter(p => p && p.trim()))];
+      const location = uniqueParts.join(', ');
+
+      console.log('📍 Nominatim Geocoding für:', location);
+      const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`;
+
+      fetch(geocodeUrl)
+        .then(response => response.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+
+            // Initialize map
+            const map = L.map('map').setView([lat, lon], 15);
+
+            // Add OpenStreetMap tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              maxZoom: 19
+            }).addTo(map);
+
+            // Add marker
+            const marker = L.marker([lat, lon]).addTo(map);
+            marker.bindPopup('<b>{{ event.event_location|force_escape|escapejs }}</b><br>{{ event.town|force_escape|escapejs }}').openPopup();
+          } else {
+            console.warn('Location not found:', location);
+            document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);">Standort konnte nicht gefunden werden</div>';
+          }
+        })
+        .catch(error => {
+          console.error('Error geocoding location:', error);
+          document.getElementById('map').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);">Karte konnte nicht geladen werden</div>';
+        });
+      {% endif %}
+    })();
+    {% endif %}
+  </script>
+</body>
+</html>

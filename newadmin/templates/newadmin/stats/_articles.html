@@ -1,0 +1,88 @@
+{% load newadmin_tags %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card__label">Gesamt</div>
+        <div class="stat-card__value">{{ article_total|default:"0" }}</div>
+        {% if article_delta_total is not None %}
+        <div class="stat-card__delta {% if article_delta_total > 0 %}up{% elif article_delta_total < 0 %}down{% else %}flat{% endif %}">
+            {% if article_delta_total > 0 %}&#8593; {{ article_delta_total }}&thinsp;%{% elif article_delta_total < 0 %}&#8595; {{ article_delta_total }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+            <span style="font-weight:400;color:var(--color-text-muted);margin-left:0.25rem;">vs. Vorperiode</span>
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Publiziert</div>
+        <div class="stat-card__value">{{ article_published|default:"0" }}</div>
+        {% if article_delta_published is not None %}
+        <div class="stat-card__delta {% if article_delta_published > 0 %}up{% elif article_delta_published < 0 %}down{% else %}flat{% endif %}">
+            {% if article_delta_published > 0 %}&#8593; {{ article_delta_published }}&thinsp;%{% elif article_delta_published < 0 %}&#8595; {{ article_delta_published }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Views Gesamt</div>
+        <div class="stat-card__value">{{ article_total_views|default:"0" }}</div>
+        {% if article_delta_views is not None %}
+        <div class="stat-card__delta {% if article_delta_views > 0 %}up{% elif article_delta_views < 0 %}down{% else %}flat{% endif %}">
+            {% if article_delta_views > 0 %}&#8593; {{ article_delta_views }}&thinsp;%{% elif article_delta_views < 0 %}&#8595; {{ article_delta_views }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Views / Artikel</div>
+        <div class="stat-card__value">{{ article_avg_views|default:"0" }}</div>
+        <div class="stat-card__delta flat">&mdash;</div>
+    </div>
+</div>
+
+{% if articles_per_day or top_articles %}
+<div class="two-col">
+    {% if articles_per_day %}
+    <div class="panel">
+        <div class="panel__header">
+            <div class="panel__title">
+                {% if chart_bucket == 'month' %}Artikel pro Monat
+                {% elif chart_bucket == 'week' %}Artikel pro Woche
+                {% else %}Artikel pro Tag{% endif %}
+            </div>
+            <div class="panel__hint">Hover f&uuml;r Details</div>
+        </div>
+        <div class="chart">
+            {% for day in articles_per_day %}
+            <div class="chart-bar" style="height: {{ day.pct }}%;" data-tooltip="{{ day.day|date:chart_bucket_label }}: {{ day.count }}"></div>
+            {% endfor %}
+        </div>
+        <div class="chart-axis">
+            <span>{{ articles_per_day.0.day|date:chart_bucket_label }}</span>
+            {% with last_entry=articles_per_day|last %}<span>{{ last_entry.day|date:chart_bucket_label }}</span>{% endwith %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if top_articles %}
+    <div class="panel">
+        <div class="panel__header">
+            <div class="panel__title">Top Artikel</div>
+        </div>
+        <div class="top-list">
+            {% for article in top_articles %}
+            <a href="{% url 'newadmin:article-edit' article.pk %}" class="top-item">
+                <div class="top-item__rank">{{ forloop.counter }}</div>
+                <div class="top-item__title">{{ article.title }}</div>
+                <div class="top-item__views">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    {{ article.request_count }}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

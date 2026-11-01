@@ -1,0 +1,60 @@
+# Secrets und lokale Konfiguration
+.env
+.env.*
+!.env.example
+molo/settings/local.py
+*.pem
+*.key
+*.p12
+*serviceAccount*.json
+*firebase-adminsdk*.json
+
+# Datenbank-Dumps und Archive (können personenbezogene Daten enthalten)
+*.sql
+*.sql.gz
+*.dump
+*.tar.gz
+*.zip
+*.sqlite3
+*.sqlite3-journal
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Laufzeitdaten (Pfade über .env konfigurierbar)
+www/
+logs/
+*.log
+backups/
+import_data/
+import_data_remote/
+import_scripts/
+tmp/
+celerybeat-schedule*
+*.pid
+nohup.out
+
+# Editoren / Betriebssystem / lokale Werkzeuge
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*~
+.DS_Store
+Thumbs.db
+.claude/
+CLAUDE.local.md
+.cocoindex_code/
+node_modules/

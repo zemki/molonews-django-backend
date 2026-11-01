@@ -1,0 +1,98 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}{{ page_title }} - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">{{ page_title }}</h1>
+    <p class="page-header__subtitle">
+        ID #{{ object.pk }} &middot; Typ: {{ object.get_type_display }}
+        {% if object.organization %} &middot; {{ object.organization.name }}{% endif %}
+    </p>
+</div>
+
+{% if form.errors %}
+<div class="form-errors">
+    <strong>Bitte korrigiere die folgenden Fehler:</strong>
+    {{ form.non_field_errors }}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="article-form">
+    {% csrf_token %}
+
+    <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="field-error">{{ form.name.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.link.id_for_label }}">Link</label>
+        {{ form.link }}
+        {% if form.link.errors %}<div class="field-error">{{ form.link.errors }}</div>{% endif %}
+    </div>
+
+    {# Default Tags #}
+    <div class="form-group">
+        <label>{{ form.default_tags.label }}</label>
+        {{ form.default_tags }}
+        {% if form.default_tags.errors %}<div class="field-error">{{ form.default_tags.errors }}</div>{% endif %}
+    </div>
+
+    {# Default Image #}
+    <div class="form-group">
+        <label>Standard-Bild</label>
+        {% if object.default_image %}
+        <div class="image-preview">
+            <img src="{{ object.default_image.url }}" alt="Aktuelles Standard-Bild">
+        </div>
+        {% endif %}
+        {{ form.default_image }}
+        <div class="image-preview image-preview--new"></div>
+    </div>
+
+    {% if form.default_image_url %}
+    <div class="form-group">
+        <label for="{{ form.default_image_url.id_for_label }}">Standard-Bild URL</label>
+        {{ form.default_image_url }}
+    </div>
+    {% endif %}
+
+    {# Area #}
+    <div class="form-group">
+        <label>Gebiete</label>
+        {{ form.area }}
+        {% if form.area.errors %}<div class="field-error">{{ form.area.errors }}</div>{% endif %}
+    </div>
+
+    {# Boolean toggles (superuser only) #}
+    {% if request.user.is_superuser %}
+    <div class="form-toggle">
+        {{ form.default_published }}
+        <label for="{{ form.default_published.id_for_label }}">{{ form.default_published.label }}</label>
+    </div>
+
+    <div class="form-toggle">
+        {{ form.auto_detect_area_from_content }}
+        <label for="{{ form.auto_detect_area_from_content.id_for_label }}">{{ form.auto_detect_area_from_content.label }}</label>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--lg">Speichern</button>
+        <a href="{% url 'newadmin:profile' %}" class="btn btn--secondary">Zurueck zum Profil</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'newadmin/js/form.js' %}"></script>
+{% endblock %}

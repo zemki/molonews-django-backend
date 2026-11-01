@@ -1,0 +1,15 @@
+# Celery-Worker für Hintergrundaufgaben.
+[Unit]
+Description=molo celery worker
+After=network.target redis.service
+
+[Service]
+User=molo
+Group=www-data
+WorkingDirectory=/srv/molo
+Environment=DJANGO_SETTINGS_MODULE=molo.settings.production
+ExecStart=/srv/molo/.venv/bin/celery -A molo worker -l info
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

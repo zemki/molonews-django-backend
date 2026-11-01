@@ -1,0 +1,1 @@
+AREA_MAX_NON_ADMIN = 3
