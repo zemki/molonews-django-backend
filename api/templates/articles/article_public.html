@@ -1,0 +1,225 @@
+{% load molo_html %}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>{{ article.title }}</title>
+
+  <!-- Dynamische Browserleisten-Farbe -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115">
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --maxw: 900px;
+      --radius: 16px;
+
+      /* Default (Light) */
+      --bg: #ffffff;
+      --card: #ffffff;
+      --text: #0b0d11;
+      --muted: #475569;
+      --link: #1d4ed8;
+      --divider: #e5e7eb;
+      --btn-bg: #0f172a;
+      --btn-text: #ffffff;
+      --hero-bg: #f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1115;
+        --card: #1a1d23;
+        --text: #f1f5f9;
+        --muted: #cbd5e1;
+        --link: #93c5fd;
+        --divider: #374151;
+        --btn-bg: #E58845;
+        --btn-text: #ffffff;
+        --hero-bg: #0b0d11;
+        --shadow: 0 10px 30px rgba(0,0,0,.35);
+      }
+    }
+    html[data-theme="light"] {
+      --bg: #ffffff; --card:#ffffff; --text:#0b0d11; --muted:#475569; --link:#1d4ed8;
+      --divider:#e5e7eb; --btn-bg:#0f172a; --btn-text:#ffffff; --hero-bg:#f3f4f6;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+    }
+    html[data-theme="dark"] {
+      --bg:#0f1115; --card:#1a1d23; --text:#f1f5f9; --muted:#cbd5e1; --link:#93c5fd;
+      --divider:#374151; --btn-bg:#E58845; --btn-text:#ffffff; --hero-bg:#0b0d11;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+
+    *{box-sizing:border-box}
+    html,body{
+      margin:0;padding:0;background:var(--bg);color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans","Apple Color Emoji","Segoe UI Emoji";
+      line-height:1.6;
+      -webkit-text-size-adjust:100%;
+      text-size-adjust:100%;
+    }
+    .wrap{max-width:var(--maxw);margin:0 auto;padding:16px}
+
+    .hero{
+      width:100%;
+      aspect-ratio: 16/9;
+      background:var(--hero-bg);
+      overflow:hidden;
+      border-radius:var(--radius);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:0;
+      padding:0;
+    }
+    .hero img{
+      max-width:100%;
+      max-height:100%;
+      width:auto;
+      height:auto;
+      object-fit:contain;
+    }
+
+    .card{
+      margin-top:-32px;
+      background:var(--card);
+      border-radius:var(--radius);
+      padding:24px;
+      box-shadow: var(--shadow);
+      position:relative;
+    }
+
+    /* Header mit Titel + Bildquelle */
+    .header-top {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .header-top h1 {
+      margin: 0 0 6px 0;
+      font-size: clamp(1.25rem, 1.8vw + 0.8rem, 1.85rem);
+      line-height: 1.3;
+      letter-spacing: -.01em;
+      font-weight: 700;
+      text-wrap: balance;
+    }
+    .image-source {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .meta{
+      color:var(--muted);
+      font-size:.95rem;
+      margin-bottom:16px;
+    }
+    .content{font-size:1.05rem;}
+    .content p{margin:0 0 1em 0}
+    .content a{color:var(--link)}
+    .read-more{
+      margin-top:24px;
+      padding-top:24px;
+      border-top:1px solid var(--divider);
+    }
+    .read-more-btn{
+      display:inline-flex;align-items:center;gap:8px;
+      background:var(--btn-bg);color:var(--btn-text);
+      text-decoration:none;padding:12px 24px;border-radius:8px;
+      font-weight:500;font-size:0.95rem;transition:opacity .2s ease;
+    }
+    .read-more-btn:hover{opacity:.92}
+    .read-more-btn svg{width:16px;height:16px;flex-shrink:0;}
+    @media (min-width: 800px){ .card{padding:32px} }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="{{ article.title }}">
+  {% if image_url %}<meta property="og:image" content="{{ image_url }}">{% endif %}
+  <meta property="og:type" content="article">
+</head>
+<body>
+  <main class="wrap">
+    <figure class="hero">
+      {% if image_url %}
+        <img src="{{ image_url }}" alt="{{ article.title|default:'Artikelbild' }}">
+      {% endif %}
+    </figure>
+
+    <article class="card">
+      <header>
+        <div class="header-top">
+          {% if article.image_source %}
+            <div class="image-source">@ {{ article.image_source }}</div>
+          {% endif %}
+          <h1>{{ article.title }}</h1>
+        </div>
+        <div class="meta">
+          {{ article.date|date:"d.m.Y, H:i" }}
+          {% if article.source and article.source.organization %}
+            · {{ article.source.organization.name }}
+          {% endif %}
+        </div>
+      </header>
+
+      <section class="content">
+        {% if article.abstract %}
+          {% if "<" in article.abstract %}
+            {{ article.abstract|sanitize_html }}
+          {% else %}
+            {{ article.abstract|linebreaks }}
+          {% endif %}
+        {% else %}
+          <p>Kein Inhalt verfügbar.</p>
+        {% endif %}
+
+        {% if show_read_more %}
+          <div class="read-more">
+            <a href="{{ article.link|safe_url }}" rel="noopener noreferrer" class="read-more-btn">
+              <span>Weiterlesen...</span>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+            </a>
+          </div>
+        {% endif %}
+      </section>
+    </article>
+  </main>
+
+  <script>
+    (function () {
+      const qp = new URLSearchParams(location.search);
+      const explicit = qp.get('theme'); // 'light' | 'dark' | null
+      const html = document.documentElement;
+
+      function isDarkPreferred() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      function applyTheme(mode) {
+        if (mode === 'light' || mode === 'dark') {
+          html.setAttribute('data-theme', mode);
+        } else {
+          html.removeAttribute('data-theme');
+        }
+        const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+        if (meta) {
+          meta.setAttribute('content', (mode || isDarkPreferred()) === 'dark' ? '#0f1115' : '#ffffff');
+        }
+      }
+
+      if (explicit === 'light' || explicit === 'dark') {
+        applyTheme(explicit);
+      } else {
+        applyTheme(null);
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        if (mq.addEventListener) mq.addEventListener('change', e => applyTheme(e.matches ? 'dark' : null));
+        else if (mq.addListener) mq.addListener(e => applyTheme(e.matches ? 'dark' : null));
+      }
+    })();
+  </script>
+</body>
+</html>

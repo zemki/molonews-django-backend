@@ -1,0 +1,31 @@
+# Beispiel-Crontab für eine molo-Instanz (crontab -e als Dienstbenutzer).
+# Pfad anpassen; Ausgaben landen in LOG_DIR bzw. hier in cron.log.
+MOLO=/srv/molo
+LOG=/srv/molo/logs/cron.log
+
+# Artikel und Feed-Events importieren
+*/15 * * * *  $MOLO/scripts/manage.sh import_articles >> $LOG 2>&1
+0 */2 * * *   $MOLO/scripts/manage.sh import_html_articles >> $LOG 2>&1
+30 */3 * * *  $MOLO/scripts/manage.sh import_html_events >> $LOG 2>&1
+
+# Event-Pflege
+5 * * * *     $MOLO/scripts/manage.sh update_event_is_past >> $LOG 2>&1
+10 3 * * *    $MOLO/scripts/manage.sh mark_events_past >> $LOG 2>&1
+20 3 * * *    $MOLO/scripts/manage.sh update_event_start_dates --auto-confirm >> $LOG 2>&1
+40 3 * * *    $MOLO/scripts/manage.sh fill_event_location >> $LOG 2>&1
+50 3 * * *    $MOLO/scripts/manage.sh update_eventv4_coordinates >> $LOG 2>&1
+0 4 * * *     $MOLO/scripts/manage.sh convert_broad_occurrences >> $LOG 2>&1
+
+# Artikel-Pflege
+0 * * * *     $MOLO/scripts/manage.sh cleanup_article_duplicates --delete --days 1 >> $LOG 2>&1
+0 5 * * 0     $MOLO/scripts/manage.sh cleanup_article_duplicates --delete --days 7 >> $LOG 2>&1
+0 6 * * *     $MOLO/scripts/manage.sh select_hot_articles >> $LOG 2>&1
+
+# Push-Nachrichten (nur mit ENABLE_PUSH=true)
+# 0 8 * * *   $MOLO/scripts/manage.sh send_push_messages >> $LOG 2>&1
+
+# Statistik, Monitoring, Aufräumen, Backup
+15 0 * * *    $MOLO/scripts/manage.sh aggregate_statistics >> $LOG 2>&1
+0 * * * *     $MOLO/scripts/manage.sh monitoring >> $LOG 2>&1
+30 2 * * *    $MOLO/scripts/manage.sh purge_tombstones >> $LOG 2>&1
+0 2 * * *     $MOLO/scripts/backup_database.sh >> $LOG 2>&1

@@ -1,0 +1,28 @@
+{% extends "newadmin/base.html" %}
+{% load static %}
+
+{% block title %}Event löschen - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="delete-confirm">
+    <div class="delete-confirm__title">Event löschen?</div>
+    <div class="delete-confirm__message">
+        Bist du sicher, dass du das Event<br>
+        <strong>&ldquo;{{ object.title }}&rdquo;</strong><br>
+        (ID #{{ object.pk }}) unwiderruflich löschen möchtest?
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="delete-confirm__actions">
+            <a href="{% url 'newadmin:event-edit' object.pk %}" class="btn btn--secondary">Abbrechen</a>
+            <button type="submit" class="btn btn--danger">Ja, löschen</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

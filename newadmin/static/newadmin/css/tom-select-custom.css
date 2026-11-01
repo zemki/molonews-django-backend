@@ -1,0 +1,170 @@
+/* ========================================
+   Tom Select - MOLO newadmin Theme Override
+   Uses CSS variables from variables.css
+   ======================================== */
+
+/* --- Wrapper --- */
+.ts-wrapper.multi .ts-control {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-md);
+    padding: 0.375rem 0.5rem;
+    min-height: 44px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+    color: var(--input-text);
+    cursor: text;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ts-wrapper.multi .ts-control:hover {
+    border-color: var(--color-accent);
+}
+
+.ts-wrapper.multi.focus .ts-control {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px var(--input-focus-shadow);
+    outline: none;
+}
+
+/* --- Selected Items (Chips/Tags) --- */
+.ts-wrapper.multi .ts-control > .item {
+    background: var(--color-accent);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.25rem 0.15rem 0.25rem 0.75rem !important;
+    margin: 0.125rem;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    cursor: default;
+}
+
+.ts-wrapper.multi .ts-control > .item.active {
+    background: var(--color-accent-hover);
+}
+
+/* --- Remove Button (X) --- */
+.ts-wrapper.multi .ts-control > .item .remove {
+    color: rgba(255, 255, 255, 0.7);
+    border: none !important;
+    border-left: none !important;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.125rem 0 0.125rem !important;
+    margin: 0 !important;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.ts-wrapper.multi .ts-control > .item .remove:hover {
+    color: #ffffff;
+    background: transparent;
+}
+
+/* --- Input field inside control --- */
+.ts-wrapper.multi .ts-control > input {
+    color: var(--input-text);
+    font-size: var(--font-size-sm);
+    background: transparent !important;
+}
+
+.ts-wrapper.multi .ts-control > input::placeholder {
+    color: var(--input-placeholder);
+}
+
+/* --- Dropdown --- */
+.ts-dropdown {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    margin-top: 2px;
+    z-index: var(--z-dropdown);
+    color: var(--color-text-primary);
+}
+
+/* --- Search Input inside Dropdown (dropdown_input plugin) --- */
+.ts-dropdown .dropdown-input-wrap {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.ts-dropdown .dropdown-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-sm);
+    font-family: var(--font-family);
+    color: var(--input-text);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.ts-dropdown .dropdown-input::placeholder {
+    color: var(--input-placeholder);
+}
+
+.ts-dropdown .dropdown-input:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 2px var(--input-focus-shadow);
+}
+
+.ts-dropdown .ts-dropdown-content {
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 0.25rem;
+}
+
+/* --- Dropdown Items --- */
+.ts-dropdown .option {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.ts-dropdown .option:hover,
+.ts-dropdown .option.active {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+}
+
+.ts-dropdown .option.selected {
+    background: var(--color-accent-light);
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+/* --- No Results --- */
+.ts-dropdown .no-results {
+    padding: 0.75rem;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+}
+
+/* --- Scrollbar in Dropdown --- */
+.ts-dropdown .ts-dropdown-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.ts-dropdown .ts-dropdown-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.ts-dropdown .ts-dropdown-content::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+}
+
+.ts-dropdown .ts-dropdown-content::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+}

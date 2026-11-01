@@ -1,0 +1,21 @@
+# Gunicorn-Dienst für das molo-Backend.
+# Installation: sudo cp deploy/systemd/molo.service /etc/systemd/system/
+#               sudo systemctl daemon-reload && sudo systemctl enable --now molo
+[Unit]
+Description=molo backend (gunicorn)
+After=network.target postgresql.service
+
+[Service]
+User=molo
+Group=www-data
+WorkingDirectory=/srv/molo
+Environment=DJANGO_SETTINGS_MODULE=molo.settings.production
+ExecStart=/srv/molo/.venv/bin/gunicorn molo.wsgi:application \
+    --bind unix:/run/molo/gunicorn.sock \
+    --workers 3 \
+    --timeout 120
+RuntimeDirectory=molo
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

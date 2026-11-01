@@ -1,0 +1,14 @@
+# Lint-Konfiguration für ruff (https://docs.astral.sh/ruff/): `ruff check .`
+target-version = "py312"
+extend-exclude = ["*/migrations/*"]
+
+[lint]
+# Pyflakes-Regeln: ungenutzte Importe und Variablen, undefinierte Namen usw.
+select = ["F"]
+
+[lint.per-file-ignores]
+# Paket-__init__.py stellen Klassen gesammelt bereit (z. B. api.views für die
+# URLs) und laden Admin-Module wegen ihrer Registrierung.
+"__init__.py" = ["F401"]
+# Die Settings erben per Stern-Import von base.py.
+"molo/settings/*.py" = ["F403", "F405"]

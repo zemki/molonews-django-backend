@@ -1,0 +1,92 @@
+{% load newadmin_tags %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card__label">Gesamt</div>
+        <div class="stat-card__value">{{ event_total|default:"0" }}</div>
+        {% if event_delta_total is not None %}
+        <div class="stat-card__delta {% if event_delta_total > 0 %}up{% elif event_delta_total < 0 %}down{% else %}flat{% endif %}">
+            {% if event_delta_total > 0 %}&#8593; {{ event_delta_total }}&thinsp;%{% elif event_delta_total < 0 %}&#8595; {{ event_delta_total }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Publiziert</div>
+        <div class="stat-card__value">{{ event_published|default:"0" }}</div>
+        {% if event_delta_published is not None %}
+        <div class="stat-card__delta {% if event_delta_published > 0 %}up{% elif event_delta_published < 0 %}down{% else %}flat{% endif %}">
+            {% if event_delta_published > 0 %}&#8593; {{ event_delta_published }}&thinsp;%{% elif event_delta_published < 0 %}&#8595; {{ event_delta_published }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Kommende</div>
+        <div class="stat-card__value">{{ event_upcoming|default:"0" }}</div>
+        <div class="stat-card__delta flat">&mdash;</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Views Gesamt</div>
+        <div class="stat-card__value">{{ event_total_views|default:"0" }}</div>
+        {% if event_delta_views is not None %}
+        <div class="stat-card__delta {% if event_delta_views > 0 %}up{% elif event_delta_views < 0 %}down{% else %}flat{% endif %}">
+            {% if event_delta_views > 0 %}&#8593; {{ event_delta_views }}&thinsp;%{% elif event_delta_views < 0 %}&#8595; {{ event_delta_views }}&thinsp;%{% else %}unver&auml;ndert{% endif %}
+        </div>
+        {% else %}
+        <div class="stat-card__delta flat">&mdash;</div>
+        {% endif %}
+    </div>
+    <div class="stat-card">
+        <div class="stat-card__label">Views / Event</div>
+        <div class="stat-card__value">{{ event_avg_views|default:"0" }}</div>
+        <div class="stat-card__delta flat">&mdash;</div>
+    </div>
+</div>
+
+{% if events_per_day or top_events %}
+<div class="two-col">
+    {% if events_per_day %}
+    <div class="panel">
+        <div class="panel__header">
+            <div class="panel__title">
+                {% if chart_bucket == 'month' %}Events pro Monat
+                {% elif chart_bucket == 'week' %}Events pro Woche
+                {% else %}Events pro Tag{% endif %}
+            </div>
+            <div class="panel__hint">Hover f&uuml;r Details</div>
+        </div>
+        <div class="chart">
+            {% for day in events_per_day %}
+            <div class="chart-bar" style="height: {{ day.pct }}%;" data-tooltip="{{ day.day|date:chart_bucket_label }}: {{ day.count }}"></div>
+            {% endfor %}
+        </div>
+        <div class="chart-axis">
+            <span>{{ events_per_day.0.day|date:chart_bucket_label }}</span>
+            {% with last_entry=events_per_day|last %}<span>{{ last_entry.day|date:chart_bucket_label }}</span>{% endwith %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if top_events %}
+    <div class="panel">
+        <div class="panel__header">
+            <div class="panel__title">Top Events</div>
+        </div>
+        <div class="top-list">
+            {% for event in top_events %}
+            <a href="{% url 'newadmin:event-edit' event.pk %}" class="top-item">
+                <div class="top-item__rank">{{ forloop.counter }}</div>
+                <div class="top-item__title">{{ event.title }}</div>
+                <div class="top-item__views">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    {{ event.request_count }}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

@@ -1,0 +1,121 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}{{ page_title }} - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+<link rel="stylesheet" href="{% static 'newadmin/css/list.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">{{ page_title }}</h1>
+    <p class="page-header__subtitle">ID #{{ object.pk }}</p>
+</div>
+
+{% if form.errors %}
+<div class="form-errors">
+    <strong>Bitte korrigiere die folgenden Fehler:</strong>
+    {{ form.non_field_errors }}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="article-form">
+    {% csrf_token %}
+
+    {% if form.name %}
+    <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">Name</label>
+        {{ form.name }}
+        {% if form.name.errors %}<div class="field-error">{{ form.name.errors }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label for="{{ form.title.id_for_label }}">Titel</label>
+        {{ form.title }}
+    </div>
+
+    {% if form.type %}
+    <div class="form-group">
+        <label for="{{ form.type.id_for_label }}">Typ</label>
+        {{ form.type }}
+    </div>
+    {% endif %}
+
+    <div class="form-group">
+        <label for="{{ form.description.id_for_label }}">Beschreibung</label>
+        {{ form.description }}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ form.homepage.id_for_label }}">Homepage</label>
+        {{ form.homepage }}
+    </div>
+
+    {# Image #}
+    <div class="form-group">
+        <label>Bild</label>
+        {% if object.image %}
+        <div class="image-preview">
+            <img src="{{ object.image.url }}" alt="Aktuelles Bild">
+        </div>
+        {% endif %}
+        {{ form.image }}
+        <div class="image-preview image-preview--new"></div>
+    </div>
+
+    {% if form.image_source %}
+    <div class="form-group">
+        <label for="{{ form.image_source.id_for_label }}">Bildquelle</label>
+        {{ form.image_source }}
+    </div>
+    {% endif %}
+
+    <details class="form-section" open>
+        <summary>Adresse</summary>
+        <div class="form-group">
+            <label for="{{ form.address.id_for_label }}">Adresse</label>
+            {{ form.address }}
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label for="{{ form.street.id_for_label }}">Strasse</label>
+                {{ form.street }}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.town.id_for_label }}">Stadt</label>
+                {{ form.town }}
+            </div>
+        </div>
+        <div class="form-group" style="max-width:200px;">
+            <label for="{{ form.zip.id_for_label }}">PLZ</label>
+            {{ form.zip }}
+        </div>
+    </details>
+
+    <div class="form-group">
+        <label>Gebiete</label>
+        {{ form.area }}
+    </div>
+
+    {% if form.active %}
+    <div class="form-toggle">
+        {{ form.active }}
+        <label for="{{ form.active.id_for_label }}">Aktiv</label>
+    </div>
+    {% endif %}
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--lg">Speichern</button>
+        <a href="{% url 'newadmin:profile' %}" class="btn btn--secondary">Zurueck</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'newadmin/js/form.js' %}"></script>
+{% endblock %}

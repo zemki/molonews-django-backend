@@ -1,0 +1,46 @@
+{% load static newadmin_tags %}
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}MOLO Redaktion{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'newadmin/css/variables.css' %}">
+    <link rel="stylesheet" href="{% static 'newadmin/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'newadmin/css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'newadmin/css/tom-select.min.css' %}">
+    <link rel="stylesheet" href="{% static 'newadmin/css/tom-select-custom.css' %}">
+    {% block extra_css %}{% endblock %}
+    <script src="{% static 'newadmin/js/theme.js' %}"></script>
+</head>
+<body>
+    <!-- Mobile hamburger -->
+    <button class="sidebar-toggle" aria-label="Menu" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="5" x2="17" y2="5"/>
+            <line x1="3" y1="10" x2="17" y2="10"/>
+            <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+    </button>
+
+    <div class="sidebar-overlay"></div>
+
+    <div class="newadmin-layout">
+        {% include "newadmin/sidebar.html" %}
+
+        <main class="newadmin-content">
+            {% include "newadmin/includes/messages.html" %}
+            {% block content %}{% endblock %}
+        </main>
+
+        {% block fab %}
+            {% include "newadmin/includes/fab.html" %}
+        {% endblock %}
+    </div>
+
+    <script src="{% static 'newadmin/js/sidebar.js' %}"></script>
+    <script src="{% static 'newadmin/js/tom-select.min.js' %}"></script>
+    <script src="{% static 'newadmin/js/tom-select-init.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

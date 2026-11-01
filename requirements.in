@@ -1,0 +1,65 @@
+# molo backend – Python 3.12+ / Django 5.2 LTS
+#
+# Direkte Abhängigkeiten mit erlaubten Versionsbereichen. Installiert wird aus
+# der Lock-Datei requirements.txt (exakte Versionen aller Pakete). Nach einer
+# Änderung hier die Lock-Datei neu erzeugen:
+#
+#   uv pip compile requirements.in --universal --python-version 3.12 -o requirements.txt
+#
+# Alle Pakete auf den neuesten erlaubten Stand heben: zusätzlich --upgrade.
+
+# --- Django ---
+Django>=5.2,<5.3
+django-jet-reboot>=1.3.10
+django-cors-headers>=4.4
+django-filter>=24.3
+django-loginas>=0.3.11
+django-versatileimagefield>=3.1
+django-ckeditor-5>=0.2.15
+django-recurrence>=1.11
+
+# --- REST API ---
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+drf-yasg>=1.21
+PyJWT>=2.9
+
+# --- Datenbank ---
+psycopg2-binary>=2.9.9
+
+# --- Import von Feeds und Webseiten ---
+requests>=2.32
+feedparser>=6.0.11
+lxml>=5.3
+beautifulsoup4>=4.13
+icalendar>=5.0
+chardet>=5.2
+python-dateutil>=2.9
+pytz>=2024.1
+# HTML aus Feeds und Formularen bereinigen (Schutz vor XSS)
+nh3>=0.2.18
+
+# --- Bilder ---
+Pillow>=10.4
+pillow-heif>=0.18
+
+# --- Geodaten ---
+geopy>=2.4.1
+pgeocode>=0.4
+
+# --- Hilfsbibliotheken ---
+pydash>=8.0
+colorama>=0.4
+
+# --- Server ---
+gunicorn>=23.0
+
+# --- Hintergrundaufgaben ---
+celery>=5.4
+redis>=5.2
+
+# --- Push-Nachrichten (optional, nur mit ENABLE_PUSH=true) ---
+firebase-admin>=6.8
+
+# --- Spracheingabe der KI-Suche (optional, nur mit SPEECH_TO_TEXT_ENABLED=true) ---
+# faster-whisper>=1.1

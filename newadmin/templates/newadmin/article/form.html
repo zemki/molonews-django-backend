@@ -1,0 +1,161 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}{{ page_title }} - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+{{ form.media.css }}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">{{ page_title }}</h1>
+    {% if not is_create %}
+    <p class="page-header__subtitle">ID #{{ object.pk }} &middot; {{ object.date|date:"j. F Y, H:i" }}</p>
+    {% endif %}
+</div>
+
+{% if form.errors %}
+<div class="form-errors">
+    <strong>Bitte korrigiere die folgenden Fehler:</strong>
+    {{ form.non_field_errors }}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="article-form">
+    {% csrf_token %}
+
+    {# Title - always first, prominent #}
+    <div class="form-group">
+        <label for="{{ form.title.id_for_label }}">Titel<span class="required-marker" aria-hidden="true">*</span></label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="field-error">{{ form.title.errors }}</div>{% endif %}
+    </div>
+
+    {# Abstract / Content (CKEditor) #}
+    <div class="form-group">
+        <label for="{{ form.abstract.id_for_label }}">Text<span class="required-marker" aria-hidden="true">*</span></label>
+        {{ form.abstract }}
+        {% if form.abstract.errors %}<div class="field-error">{{ form.abstract.errors }}</div>{% endif %}
+    </div>
+
+    {# Collapsible section for additional fields #}
+    <details class="form-section" open>
+        <summary>Weitere Felder</summary>
+
+        {% if form.source %}
+        <div class="form-group">
+            <label for="{{ form.source.id_for_label }}">Quelle<span class="required-marker" aria-hidden="true">*</span></label>
+            {{ form.source }}
+            {% if form.source.errors %}<div class="field-error">{{ form.source.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {% if form.link %}
+        <div class="form-group">
+            <label for="{{ form.link.id_for_label }}">Link</label>
+            {{ form.link }}
+            {% if form.link.errors %}<div class="field-error">{{ form.link.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {# Image upload with preview #}
+        <div class="form-group">
+            <label>Bild</label>
+            {% if object and object.image %}
+            <div class="image-preview">
+                <img src="{{ object.image.url }}" alt="Aktuelles Bild">
+            </div>
+            {% endif %}
+            {{ form.image }}
+            <div class="image-preview image-preview--new"></div>
+            {% if form.image.errors %}<div class="field-error">{{ form.image.errors }}</div>{% endif %}
+        </div>
+
+        {% if form.image_url %}
+        <div class="form-group">
+            <label for="{{ form.image_url.id_for_label }}">Bild-URL (alternativ)</label>
+            {{ form.image_url }}
+            {% if form.image_url.errors %}<div class="field-error">{{ form.image_url.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {% if form.image_source %}
+        <div class="form-group">
+            <label for="{{ form.image_source.id_for_label }}">Bildquelle</label>
+            {{ form.image_source }}
+            {% if form.image_source.errors %}<div class="field-error">{{ form.image_source.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {# Tags as checkboxes with AI auto-tag #}
+        <div class="form-group">
+            <div class="autotag-wrapper">
+                <label>Themen<span class="required-marker" aria-hidden="true">*</span></label>
+                <button type="button" class="autotag-btn" id="autotag-btn"
+                        data-api-url="/api/v4/AI/generate-article-tags/"
+                        data-title-field=".form-input--title"
+                        data-content-field="abstract">
+                    <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1.07A7.001 7.001 0 0113 22h-2a7.001 7.001 0 01-6.93-6H3a1 1 0 110-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zm0 7a5 5 0 00-5 5 5 5 0 005 5h0a5 5 0 005-5 5 5 0 00-5-5z"/></svg>
+                    Themen automatisch ermitteln
+                </button>
+            </div>
+            {{ form.tags }}
+            {% if form.tags.errors %}<div class="field-error">{{ form.tags.errors }}</div>{% endif %}
+        </div>
+
+        {# Area #}
+        <div class="form-group">
+            <div class="label-with-action">
+                <label for="{{ form.area.id_for_label }}">Gebiete<span class="required-marker" aria-hidden="true">*</span></label>
+                <button type="button" class="area-clear-btn" data-clear-select="{{ form.area.id_for_label }}">
+                    Auswahl entfernen
+                </button>
+            </div>
+            {{ form.area }}
+            {% include "newadmin/includes/_area_hint.html" %}
+            {% if form.area.errors %}<div class="field-error">{{ form.area.errors }}</div>{% endif %}
+        </div>
+
+        {# Sprache #}
+        {% if form.language %}
+        <div class="form-group">
+            <label for="{{ form.language.id_for_label }}">Sprache</label>
+            {{ form.language }}
+            {% if form.language.errors %}<div class="field-error">{{ form.language.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {# Verknüpfte Übersetzung #}
+        {% if form.translation_ids %}
+        <div class="form-group">
+            <label for="{{ form.translation_ids.id_for_label }}">{{ form.translation_ids.label }}</label>
+            {{ form.translation_ids }}
+            <p class="field-hint">{{ form.translation_ids.help_text }}</p>
+            {% if form.translation_ids.errors %}<div class="field-error">{{ form.translation_ids.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+    </details>
+
+    {# Submit Buttons #}
+    <div class="form-actions">
+        <button type="submit" name="_save_publish" class="btn btn--primary btn--lg">{% if user_can_publish %}Speichern und veröffentlichen{% else %}Zur Prüfung einreichen{% endif %}</button>
+        <button type="submit" name="_save_draft" class="btn btn--secondary btn--lg">Als Entwurf speichern</button>
+        {% if is_create %}
+            <a href="{% url 'newadmin:article-list' %}" class="btn btn--secondary btn--lg">Zur Liste zurück</a>
+        {% else %}
+            <a href="{% url 'newadmin:article-delete' object.pk %}" class="btn btn--danger">Löschen</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+<script src="{% static 'newadmin/js/form.js' %}"></script>
+<script src="{% static 'newadmin/js/autotag.js' %}"></script>
+{% endblock %}

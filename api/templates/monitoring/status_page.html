@@ -1,0 +1,133 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoring Dashboard</title>
+    <style>
+        body { background:#0d0d0d; color:#e0e0e0; font-family:"Fira Code","Consolas",monospace; margin:0; padding:2rem; }
+        h1 { text-align:center; color:#ff6600; font-size:2.5rem; letter-spacing:2px; text-shadow:0 0 15px #ff6600; text-transform: lowercase; }
+        .timestamp { text-align:center; margin:.25rem 0; color:#bbb; }
+        .grid { display:flex; gap:2rem; justify-content:center; flex-wrap:wrap; margin-top:1.5rem; }
+        .card { background:#1a1a1a; border:1px solid #333; border-radius:12px; padding:1.5rem; width:300px;
+                box-shadow:0 0 20px rgba(255,102,0,.1); transition:transform .2s, box-shadow .2s; }
+        .card:hover { transform:translateY(-5px); box-shadow:0 0 25px rgba(255,102,0,.3); }
+        .card h2 { font-size:1.1rem; margin:0 0 .75rem; text-transform:uppercase; color:#ff6600; border-bottom:1px solid #333; padding-bottom:.5rem; }
+        .status { font-size:1.05rem; font-weight:700; margin-top:.5rem; }
+        .ok { color:#ff6600; text-shadow:0 0 10px #ff6600; }
+        .fail { color:#ff0066; text-shadow:0 0 10px #ff0066; }
+        .skipped { color:#ffaa00; text-shadow:0 0 10px #ffaa00; }
+        pre { background:#111; color:#ff6666; font-size:.8rem; padding:.5rem; border-radius:6px; overflow-x:auto; max-height:150px; }
+        .blinking-cursor { font-weight:100; font-size:1.2rem; color:#ff6600; animation:blink 1s step-end infinite; }
+        @keyframes blink { from,to{color:transparent;} 50%{color:#ff6600;} }
+        .detail { font-size:.85rem; color:#bbb; margin:.4rem 0 0; line-height:1.4; }
+        .muted { color:#666; }
+        footer { text-align:center; margin-top:2rem; font-size:.8rem; color:#444; }
+    </style>
+</head>
+<body>
+    <h1>molo system monitoring<span class="blinking-cursor">_</span></h1>
+
+    {% if data.timestamp %}
+        <p class="timestamp">
+            Run gestartet:
+            <span id="ts-start" data-ts="{{ data.timestamp|escape }}"></span>
+        </p>
+        <p class="timestamp">
+            Letztes Update:
+            <span id="ts-update" data-ts="{{ data.last_update|escape }}"></span>
+        </p>
+    {% else %}
+        <p class="timestamp fail">Keine Monitoring-Daten gefunden.</p>
+    {% endif %}
+
+    <div class="grid">
+        <div class="card">
+            <h2>Events abrufen</h2>
+            {% if data.check_events.success %}
+                <p class="status ok">✔ Erfolgreich ({{ data.check_events.status }})</p>
+            {% else %}
+                <p class="status fail">✘ Fehler ({{ data.check_events.status }})</p>
+                <pre>{{ data.check_events.error }}</pre>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Event erstellen</h2>
+            {% if data.create_event.success %}
+                <p class="status ok">✔ Erfolgreich ({{ data.create_event.status }})</p>
+            {% else %}
+                <p class="status fail">✘ Fehler ({{ data.create_event.status }})</p>
+                <pre>{{ data.create_event.error }}</pre>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Event löschen</h2>
+            {% if data.delete_event.success %}
+                <p class="status ok">✔ Erfolgreich ({{ data.delete_event.status }})</p>
+            {% elif data.delete_event.success == None %}
+                <p class="status skipped">➜ Übersprungen</p>
+                <pre>{{ data.delete_event.error }}</pre>
+            {% else %}
+                <p class="status fail">✘ Fehler ({{ data.delete_event.status }})</p>
+                <pre>{{ data.delete_event.error }}</pre>
+            {% endif %}
+        </div>
+
+        {% for key, check in data.pipeline.items %}
+        <div class="card">
+            <h2>{{ check.label }}</h2>
+            {% if check.success %}
+                <p class="status ok">✔ In Ordnung</p>
+            {% elif check.success == None %}
+                <p class="status skipped">➜ Übersprungen</p>
+            {% else %}
+                <p class="status fail">✘ Fehler</p>
+            {% endif %}
+            <p class="detail">{{ check.value }}</p>
+            {% if check.threshold %}<p class="detail muted">Grenzwert: {{ check.threshold }}</p>{% endif %}
+            {% if check.error %}<pre>{{ check.error }}</pre>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <footer>Molo Monitoring Dashboard</footer>
+
+    <script>
+        function fmtBerlin(ts) {
+            try {
+                if (!ts) return "";
+                let s = String(ts).trim();
+                const hasZone = /Z$|[+-]\d{2}:\d{2}$/.test(s);
+                if (!hasZone) s += "Z";
+                const d = new Date(s);
+                if (isNaN(d.getTime())) return ts;
+                const options = {
+                    timeZone: 'Europe/Berlin',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                };
+                return d.toLocaleString('de-DE', options).replace(',', '');
+            } catch (e) {
+                return ts;
+            }
+        }
+        function renderTime(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const ts = el.getAttribute('data-ts');
+            el.textContent = fmtBerlin(ts);
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            renderTime('ts-start');
+            renderTime('ts-update');
+        });
+    </script>
+</body>
+</html>

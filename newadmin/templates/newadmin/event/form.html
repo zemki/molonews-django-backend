@@ -1,0 +1,518 @@
+{% extends "newadmin/base.html" %}
+{% load static newadmin_tags %}
+
+{% block title %}{{ page_title }} - MOLO Redaktion{% endblock %}
+
+{% block extra_css %}
+{{ form.media.css }}
+<link rel="stylesheet" href="{% static 'newadmin/css/form.css' %}">
+{% endblock %}
+
+{% block fab %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">{{ page_title }}</h1>
+    {% if not is_create %}
+    <p class="page-header__subtitle">ID #{{ object.pk }} &middot; {{ object.start_date|date:"j. F Y, H:i" }}</p>
+    {% endif %}
+</div>
+
+{% if form.errors or occurrence_formset.errors or occurrence_formset.non_form_errors %}
+<div class="form-errors">
+    <strong>Bitte korrigiere die folgenden Fehler:</strong>
+    {{ form.non_field_errors }}
+    {{ occurrence_formset.non_form_errors }}
+    {% for occ_form in occurrence_formset %}
+        {{ occ_form.non_field_errors }}
+    {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" class="article-form">
+    {% csrf_token %}
+
+    {# Title #}
+    <div class="form-group">
+        <label for="{{ form.title.id_for_label }}">Titel<span class="required-marker" aria-hidden="true">*</span></label>
+        {{ form.title }}
+        {% if form.title.errors %}<div class="field-error">{{ form.title.errors }}</div>{% endif %}
+    </div>
+
+    {# Content (CKEditor) #}
+    <div class="form-group">
+        <label for="{{ form.content.id_for_label }}">Inhalt<span class="required-marker" aria-hidden="true">*</span></label>
+        {{ form.content }}
+        {% if form.content.errors %}<div class="field-error">{{ form.content.errors }}</div>{% endif %}
+    </div>
+
+    {# Termine (Occurrences) #}
+    <details class="form-section" open>
+        <summary>Termine<span class="required-marker" aria-hidden="true">*</span></summary>
+
+        {# AI-gestützte Terminerzeugung aus Freitextbeschreibung #}
+        <div class="occ-generator" data-api-url="{% url 'newadmin:event-generate-occurrences' %}">
+            <label for="occ-generator-input" class="occ-generator__label">
+                Vorkommen der Termine beschreiben
+            </label>
+            <textarea id="occ-generator-input" class="form-input occ-generator__input" rows="1"
+                      placeholder="z. B. vom 17.05. bis 18.06.2026 jeweils dienstags und donnerstags 12:00 Uhr bis 18:00 Uhr"></textarea>
+            <div class="occ-generator__actions">
+                <button type="button" id="occ-generate-btn" class="btn btn--primary btn--sm occ-generator__btn">
+                    <svg class="occ-generator__icon" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1.07A7.001 7.001 0 0113 22h-2a7.001 7.001 0 01-6.93-6H3a1 1 0 110-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z"/>
+                    </svg>
+                    <span class="occ-generator__spinner" aria-hidden="true"></span>
+                    <span class="occ-generator__btn-label">Termine anlegen</span>
+                </button>
+                <div class="occ-generator__status" id="occ-generator-status" role="status" aria-live="polite"></div>
+            </div>
+        </div>
+
+        {{ occurrence_formset.management_form }}
+
+        <div id="occurrence-forms">
+            {% for occ_form in occurrence_formset %}
+            <div class="occurrence-row" {% if occ_form.instance.pk %}data-pk="{{ occ_form.instance.pk }}"{% endif %}>
+                <div class="occurrence-fields">
+                    <div class="form-group" style="flex:1">
+                        <label>Startdatum und Uhrzeit</label>
+                        {{ occ_form.start_datetime }}
+                        {% if occ_form.start_datetime.errors %}<div class="field-error">{{ occ_form.start_datetime.errors }}</div>{% endif %}
+                    </div>
+                    <div class="form-group" style="flex:1">
+                        <label>Enddatum und Uhrzeit</label>
+                        {{ occ_form.end_datetime }}
+                        {% if occ_form.end_datetime.errors %}<div class="field-error">{{ occ_form.end_datetime.errors }}</div>{% endif %}
+                    </div>
+                    <div class="occurrence-delete">
+                        {{ occ_form.DELETE }}
+                        <button type="button" class="occurrence-delete__btn" data-delete-target="{{ occ_form.DELETE.id_for_label }}">Entfernen</button>
+                    </div>
+                    {{ occ_form.id }}
+                </div>
+                <div class="occurrence-warning" role="status" aria-live="polite" hidden></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="occurrence-toolbar">
+            <button type="button" class="btn btn--secondary btn--sm" id="add-occurrence">
+                + Termin hinzufuegen
+            </button>
+            <button type="button" class="btn btn--sm occurrence-clear-btn" id="clear-occurrences">
+                Alle Termine entfernen
+            </button>
+        </div>
+    </details>
+
+    {# Veranstaltungsort #}
+    <details class="form-section" open>
+        <summary>Veranstaltungsort<span class="required-marker" aria-hidden="true">*</span></summary>
+
+        <div class="form-group">
+            <label for="{{ form.event_location.id_for_label }}">Name Veranstaltungsort<span class="required-marker" aria-hidden="true">*</span></label>
+            {{ form.event_location }}
+            {% if form.event_location.errors %}<div class="field-error">{{ form.event_location.errors }}</div>{% endif %}
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div class="form-group">
+                <label for="{{ form.street.id_for_label }}">Strasse<span class="required-marker" aria-hidden="true">*</span></label>
+                {{ form.street }}
+                {% if form.street.errors %}<div class="field-error">{{ form.street.errors }}</div>{% endif %}
+            </div>
+            <div class="form-group">
+                <label for="{{ form.town.id_for_label }}">Stadt<span class="required-marker" aria-hidden="true">*</span></label>
+                {{ form.town }}
+                {% if form.town.errors %}<div class="field-error">{{ form.town.errors }}</div>{% endif %}
+            </div>
+        </div>
+
+        <div class="form-group" style="max-width:200px;">
+            <label for="{{ form.zip_code.id_for_label }}">PLZ<span class="required-marker" aria-hidden="true">*</span></label>
+            {{ form.zip_code }}
+            {% if form.zip_code.errors %}<div class="field-error">{{ form.zip_code.errors }}</div>{% endif %}
+        </div>
+    </details>
+
+    {# Weitere Felder #}
+    <details class="form-section" open>
+        <summary>Weitere Felder</summary>
+
+        {% if form.source %}
+        <div class="form-group">
+            <label for="{{ form.source.id_for_label }}">Quelle<span class="required-marker" aria-hidden="true">*</span></label>
+            {{ form.source }}
+            {% if form.source.errors %}<div class="field-error">{{ form.source.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {% if form.link %}
+        <div class="form-group">
+            <label for="{{ form.link.id_for_label }}">Link</label>
+            {{ form.link }}
+        </div>
+        {% endif %}
+
+        {% if form.ticket_url %}
+        <div class="form-group">
+            <label for="{{ form.ticket_url.id_for_label }}">Ticket-URL</label>
+            {{ form.ticket_url }}
+        </div>
+        {% endif %}
+
+        {# Image #}
+        <div class="form-group">
+            <label>Bild</label>
+            {% if object and object.image %}
+            <div class="image-preview">
+                <img src="{{ object.image.url }}" alt="Aktuelles Bild">
+            </div>
+            {% endif %}
+            {{ form.image }}
+            <div class="image-preview image-preview--new"></div>
+            {% if form.image.errors %}<div class="field-error">{{ form.image.errors }}</div>{% endif %}
+        </div>
+
+        {% if form.image_url %}
+        <div class="form-group">
+            <label for="{{ form.image_url.id_for_label }}">Bild-URL (alternativ)</label>
+            {{ form.image_url }}
+        </div>
+        {% endif %}
+
+        {% if form.image_source %}
+        <div class="form-group">
+            <label for="{{ form.image_source.id_for_label }}">Bildquelle</label>
+            {{ form.image_source }}
+        </div>
+        {% endif %}
+
+        {# Tags with AI auto-tag #}
+        <div class="form-group">
+            <div class="autotag-wrapper">
+                <label>Themen<span class="required-marker" aria-hidden="true">*</span></label>
+                <button type="button" class="autotag-btn" id="autotag-btn"
+                        data-api-url="/api/v4/AI/generate-event-tags/"
+                        data-title-field=".form-input--title"
+                        data-content-field="content">
+                    <svg viewBox="0 0 24 24"><path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1.07A7.001 7.001 0 0113 22h-2a7.001 7.001 0 01-6.93-6H3a1 1 0 110-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zm0 7a5 5 0 00-5 5 5 5 0 005 5h0a5 5 0 005-5 5 5 0 00-5-5z"/></svg>
+                    Themen automatisch ermitteln
+                </button>
+            </div>
+            {{ form.tags }}
+            {% if form.tags.errors %}<div class="field-error">{{ form.tags.errors }}</div>{% endif %}
+        </div>
+
+        {# Subtags #}
+        {% if form.subtags %}
+        <div class="form-group">
+            <label>{{ form.subtags.label }}</label>
+            {{ form.subtags }}
+        </div>
+        {% endif %}
+
+        {# Area #}
+        <div class="form-group">
+            <div class="label-with-action">
+                <label for="{{ form.area.id_for_label }}">Gebiete<span class="required-marker" aria-hidden="true">*</span></label>
+                <button type="button" class="area-clear-btn" data-clear-select="{{ form.area.id_for_label }}">
+                    Auswahl entfernen
+                </button>
+            </div>
+            {{ form.area }}
+            {% include "newadmin/includes/_area_hint.html" %}
+            {% if form.area.errors %}<div class="field-error">{{ form.area.errors }}</div>{% endif %}
+        </div>
+
+        {# Sprache #}
+        {% if form.language %}
+        <div class="form-group">
+            <label for="{{ form.language.id_for_label }}">Sprache</label>
+            {{ form.language }}
+            {% if form.language.errors %}<div class="field-error">{{ form.language.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+        {# Verknüpfte Übersetzung #}
+        {% if form.translation_ids %}
+        <div class="form-group">
+            <label for="{{ form.translation_ids.id_for_label }}">{{ form.translation_ids.label }}</label>
+            {{ form.translation_ids }}
+            <p class="field-hint">{{ form.translation_ids.help_text }}</p>
+            {% if form.translation_ids.errors %}<div class="field-error">{{ form.translation_ids.errors }}</div>{% endif %}
+        </div>
+        {% endif %}
+
+    </details>
+
+    {# Submit Buttons #}
+    <div class="form-actions">
+        <button type="submit" name="_save_publish" class="btn btn--primary btn--lg">{% if user_can_publish %}Speichern und veröffentlichen{% else %}Zur Prüfung einreichen{% endif %}</button>
+        <button type="submit" name="_save_draft" class="btn btn--secondary btn--lg">Als Entwurf speichern</button>
+        {% if is_create %}
+            <a href="{% url 'newadmin:event-list' %}" class="btn btn--secondary btn--lg">Zur Liste zurück</a>
+        {% else %}
+            <a href="{% url 'newadmin:event-delete' object.pk %}" class="btn btn--danger">Löschen</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+{{ form.media.js }}
+<script src="{% static 'newadmin/js/form.js' %}"></script>
+<script src="{% static 'newadmin/js/autotag.js' %}"></script>
+<script>
+(function() {
+    // Dynamic inline formset: add new occurrence rows
+    var totalForms = document.querySelector('#id_occurrences-TOTAL_FORMS');
+    var addBtn = document.getElementById('add-occurrence');
+    var container = document.getElementById('occurrence-forms');
+
+    // Core formset elements are required by both the add-button and the AI generator.
+    if (!totalForms || !container) return;
+
+    // Delegated handler: remove occurrence row from UI, mark DELETE for existing rows
+    container.addEventListener('click', function(ev) {
+        var btn = ev.target.closest('.occurrence-delete__btn');
+        if (!btn) return;
+        ev.preventDefault();
+        var row = btn.closest('.occurrence-row');
+        if (!row) return;
+        var targetId = btn.getAttribute('data-delete-target');
+        var deleteInput = targetId ? document.getElementById(targetId) : null;
+        if (row.dataset.pk && deleteInput) {
+            // Existing occurrence: flag for deletion on save
+            deleteInput.checked = true;
+            row.style.display = 'none';
+        } else {
+            // Newly added row: just drop it (Django skips empty extra forms)
+            row.parentNode.removeChild(row);
+        }
+    });
+
+    function buildOccurrenceRow(idx, startValue, endValue) {
+        var row = document.createElement('div');
+        row.className = 'occurrence-row';
+        var s = startValue || '';
+        var e = endValue || '';
+        row.innerHTML = '<div class="occurrence-fields">' +
+            '<div class="form-group" style="flex:1">' +
+            '<label>Startdatum und Uhrzeit</label>' +
+            '<input type="datetime-local" name="occurrences-' + idx + '-start_datetime" class="form-input" value="' + s + '">' +
+            '</div>' +
+            '<div class="form-group" style="flex:1">' +
+            '<label>Enddatum und Uhrzeit</label>' +
+            '<input type="datetime-local" name="occurrences-' + idx + '-end_datetime" class="form-input" value="' + e + '">' +
+            '</div>' +
+            '<div class="occurrence-delete">' +
+            '<input type="checkbox" name="occurrences-' + idx + '-DELETE" id="id_occurrences-' + idx + '-DELETE">' +
+            '<button type="button" class="occurrence-delete__btn" data-delete-target="id_occurrences-' + idx + '-DELETE">Entfernen</button>' +
+            '</div>' +
+            '<input type="hidden" name="occurrences-' + idx + '-id" value="">' +
+            '</div>' +
+            '<div class="occurrence-warning" role="status" aria-live="polite" hidden></div>';
+        return row;
+    }
+
+    // Warnungen pro Termin: Mehrtages-Hinweis (Start und Ende an verschiedenen Tagen) und Reihenfolge-Hinweis (Ende vor/gleich Start).
+    var MULTIDAY_WARNING_TEXT =
+        'Start- und Enddatum liegen an verschiedenen Tagen. ' +
+        'Bitte für jeden Tag einen eigenen Termin anlegen. ' +
+        'Für längere Zeiträume kannst du oben die Terminbeschreibung nutzen, ' +
+        'um die Einzeltermine automatisch erzeugen zu lassen.';
+    var INVERTED_WARNING_TEXT =
+        'Das Enddatum liegt vor dem Startdatum. Bitte prüfen.';
+
+    function datePart(value) {
+        // datetime-local hat das Format "YYYY-MM-DDTHH:MM"; der Teil vor "T" ist der Kalendertag.
+        if (!value) return '';
+        var t = value.indexOf('T');
+        return t > 0 ? value.slice(0, t) : value;
+    }
+
+    function isRowMarkedDeleted(row) {
+        var cb = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+        return !!(cb && cb.checked);
+    }
+
+    function updateOccurrenceWarning(row) {
+        if (!row) return;
+        var warn = row.querySelector('.occurrence-warning');
+        if (!warn) return;
+        var startInput = row.querySelector('input[name$="-start_datetime"]');
+        var endInput = row.querySelector('input[name$="-end_datetime"]');
+        if (!startInput || !endInput) return;
+
+        var message = '';
+        if (!isRowMarkedDeleted(row) && startInput.value && endInput.value) {
+            if (endInput.value < startInput.value) {
+                message = INVERTED_WARNING_TEXT;
+            } else if (datePart(startInput.value) !== datePart(endInput.value)) {
+                message = MULTIDAY_WARNING_TEXT;
+            }
+        }
+        warn.textContent = message;
+        warn.hidden = !message;
+        row.classList.toggle('occurrence-row--warning', !!message);
+    }
+
+    function refreshAllOccurrenceWarnings() {
+        container.querySelectorAll('.occurrence-row').forEach(updateOccurrenceWarning);
+    }
+
+    function handleOccurrenceChange(ev) {
+        var target = ev.target;
+        if (!target || !target.name) return;
+        var name = target.name;
+        if (name.endsWith('-start_datetime') || name.endsWith('-end_datetime') || name.endsWith('-DELETE')) {
+            updateOccurrenceWarning(target.closest('.occurrence-row'));
+        }
+    }
+    container.addEventListener('input', handleOccurrenceChange);
+    container.addEventListener('change', handleOccurrenceChange);
+    refreshAllOccurrenceWarnings();
+
+    if (addBtn) {
+        addBtn.addEventListener('click', function() {
+            var idx = parseInt(totalForms.value, 10);
+            container.appendChild(buildOccurrenceRow(idx, '', ''));
+            totalForms.value = idx + 1;
+        });
+    }
+
+    // "Alle Termine entfernen" — bestehende markieren, neue aus dem DOM droppen.
+    var clearBtn = document.getElementById('clear-occurrences');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            var rows = container.querySelectorAll('.occurrence-row');
+            if (!rows.length) return;
+            var existing = 0, fresh = 0;
+            rows.forEach(function(row) {
+                if (row.dataset.pk) existing++; else fresh++;
+            });
+            var msg = 'Wirklich alle ' + rows.length + ' Termine entfernen?';
+            if (existing) {
+                msg += '\n\n' + existing + ' bereits gespeicherte ' +
+                       (existing === 1 ? 'Termin wird' : 'Termine werden') +
+                       ' erst beim Speichern endgültig gelöscht.';
+            }
+            if (!window.confirm(msg)) return;
+
+            rows.forEach(function(row) {
+                if (row.dataset.pk) {
+                    var cb = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                    if (cb) cb.checked = true;
+                    row.style.display = 'none';
+                } else {
+                    row.parentNode.removeChild(row);
+                }
+            });
+        });
+    }
+
+    // --- AI-Termingenerator ---
+    var genWrapper = document.querySelector('.occ-generator');
+    var genBtn = document.getElementById('occ-generate-btn');
+    var genInput = document.getElementById('occ-generator-input');
+    var genStatus = document.getElementById('occ-generator-status');
+
+    if (genWrapper && genBtn && genInput) {
+        var apiUrl = genWrapper.getAttribute('data-api-url');
+        var csrfEl = document.querySelector('[name=csrfmiddlewaretoken]');
+        var btnLabel = genBtn.querySelector('.occ-generator__btn-label');
+        var origBtnLabel = btnLabel ? btnLabel.textContent : 'Termine anlegen';
+
+        function setStatus(msg, kind) {
+            if (!genStatus) return;
+            genStatus.textContent = msg || '';
+            genStatus.className = 'occ-generator__status' + (kind ? ' occ-generator__status--' + kind : '');
+        }
+
+        function setLoading(loading) {
+            genBtn.disabled = loading;
+            genInput.disabled = loading;
+            genWrapper.classList.toggle('occ-generator--loading', loading);
+            if (btnLabel) btnLabel.textContent = loading ? 'Verarbeite…' : origBtnLabel;
+        }
+
+        genBtn.addEventListener('click', function(ev) {
+            ev.preventDefault();
+            var description = (genInput.value || '').trim();
+            if (!description) {
+                setStatus('Bitte zuerst eine Beschreibung eingeben.', 'warn');
+                genInput.focus();
+                return;
+            }
+
+            setLoading(true);
+            setStatus('Erzeuge Einzeltermine', 'info');
+
+            var formData = new FormData();
+            formData.append('description', description);
+
+            fetch(apiUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfEl ? csrfEl.value : '' },
+                credentials: 'same-origin',
+            })
+            .then(function(resp) {
+                return resp.json().then(function(body) { return { ok: resp.ok, status: resp.status, body: body }; });
+            })
+            .then(function(res) {
+                setLoading(false);
+                if (!res.ok) {
+                    var body = res.body || {};
+                    var isIncomplete = body.error_type === 'incomplete';
+                    var statusText = body.error || ('Fehler: HTTP ' + res.status);
+                    setStatus(statusText, isIncomplete ? 'warn' : 'error');
+                    // Text bleibt im Feld, damit der Nutzer ergänzen kann.
+                    if (isIncomplete) {
+                        genInput.focus();
+                        var end = genInput.value.length;
+                        try { genInput.setSelectionRange(end, end); } catch (_) {}
+                    }
+                    return;
+                }
+                var list = (res.body && res.body.occurrences) || [];
+                var skipped = (res.body && res.body.skipped) || 0;
+                var truncated = (res.body && res.body.truncated) || 0;
+                if (!list.length) {
+                    setStatus('Keine passenden Termine gefunden. Formulierung anpassen?', 'warn');
+                    return;
+                }
+
+                var idx = parseInt(totalForms.value, 10);
+                list.forEach(function(occ) {
+                    container.appendChild(buildOccurrenceRow(idx, occ.start_datetime, occ.end_datetime));
+                    idx++;
+                });
+                totalForms.value = idx;
+
+                // Empty placeholder rows (no pk, no start value) wandern ans Ende,
+                // damit sie als "Anhängen"-Feld unten bleiben.
+                var rows = container.querySelectorAll('.occurrence-row');
+                rows.forEach(function(row) {
+                    if (row.dataset.pk) return;
+                    var startInput = row.querySelector('input[name$="-start_datetime"]');
+                    if (startInput && !startInput.value) container.appendChild(row);
+                });
+                var msg = list.length + (list.length === 1 ? ' Termin' : ' Termine') + ' angelegt. Bitte prüfen und speichern.';
+                if (skipped) msg += ' (' + skipped + ' ungültige übersprungen)';
+                if (truncated) msg += ' (' + truncated + ' über Limit 300 gekürzt)';
+                setStatus(msg, truncated ? 'warn' : 'success');
+                genInput.value = '';
+                refreshAllOccurrenceWarnings();
+            })
+            .catch(function(err) {
+                setLoading(false);
+                setStatus('Netzwerkfehler: ' + (err && err.message ? err.message : err), 'error');
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}
